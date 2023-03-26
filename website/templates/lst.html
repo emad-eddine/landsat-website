@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../static/css/lst.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="../static/index.js"></script>
+    <title>{% block title %}LST{% endblock %}</title>
+</head>
+
+<body>
+    <section class="lst-nav-section">
+        <nav class="navBar">
+            <a href="#" class="logo">LANDSAT-8</a>
+            <div class="nav-links">
+                <ul>
+                    <li><a href="home">Accueil</a></li>
+                    <li><a href="#">LST</a></li>
+                    <li><a href="#">Vegetaion</a></li>
+                    <li><a href="#">A propos</a></li>
+                </ul>
+            </div>
+        </nav>
+    </section>
+    <section class="card-container slideUp-animation">
+        <div class="image-container">
+            <img src="../static/res/dz.svg" class="illustration" alt="">        
+        </div>
+        <form action="" method="">
+            <div class="form-container slideRight-animation">
+    
+                <h1 class="form-header">
+                    Calculer la temperature de la surface
+                </h1>
+    
+                <div class="input-container">
+                    <label for="city-name"></label>
+                    <input type="text" name="city-name" id="city-name" required>
+                    <span>
+                        Le nom de la Wilaya
+                    </span>
+                    <div class="error"></div>
+                </div>
+
+                <div class="input-container">
+                    <label for="algo">
+                    </label>
+                    <input type="text" name="lst-algo" id="lst-algo" required>
+                    <span>
+                        Algorithme
+                    </span>
+                    <div class="error"></div>
+                </div>
+                <div id="btm">
+                    <button type="submit" class="submit-btn">Calculer!</button>
+                </div>
+            </div>
+        </form>
+    </section>
+</body>
