@@ -6,39 +6,40 @@
 {% block loginMainSec %}
 <!-- main -->
 <section class="signup-class">
-<div class="main-w3layouts wrapper">
-    <h1>Connexion</h1>
-    <div class="main-agileinfo">
-        <div class="agileits-top">
-            <form action="#" method="post">
-                <input id="loginUser" class="text" type="text" name="Username" placeholder="Non D'utilisateur" required="">
-                <input class="text" type="password" name="password" placeholder="Mot De Passe" required="">
-                <div class="wthree-text">
-                    <div class="clear"> </div>
-                </div>
-                <input type="submit" value="Connexion">
-            </form>
-            <p>Vous avez pas un compte? <a href="{{ url_for('signup.goSignup')}}"> Inscrire Maintenant!</a></p>
+    <div class="main-w3layouts wrapper">
+        <h1>Connexion</h1>
+        <div class="main-agileinfo">
+            <div class="agileits-top">
+                <form method="post">
+                    <input id="loginUser" class="text" type="text" name="Username" placeholder="Non D'utilisateur"
+                        required="">
+                    <input class="text" type="password" name="password" placeholder="Mot De Passe" required="">
+                    <div class="wthree-text">
+                        <div class="clear"> </div>
+                    </div>
+                    <input type="submit" value="Connexion">
+                </form>
+                <p>Vous avez pas un compte? <a href="{{ url_for('auth.goSignup')}}"> Inscrire Maintenant!</a></p>
+            </div>
         </div>
+        <ul class="colorlib-bubbles">
+            <li></li>
+            <li></li>
+            <li></li>
+            <li></li>
+            <li></li>
+            <li></li>
+            <li></li>
+            <li></li>
+            <li></li>
+            <li></li>
+        </ul>
     </div>
-    <ul class="colorlib-bubbles">
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-    </ul>
-</div>
 </section>
 <!-- //main -->
-	<!-- copyright -->
-		<div class="colorlibcopy-agile">
-			<p>© 2023 K.Imad E.Wafa A.Bilel Amine. All rights reserved </p>
-		</div>
-		<!-- //copyright -->
+<!-- copyright -->
+<div class="colorlibcopy-agile">
+    <p>© 2023 K.Imad E.Wafa A.Bilel Amine. All rights reserved </p>
+</div>
+<!-- //copyright -->
 {% endblock %}
