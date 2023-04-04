@@ -211,13 +211,13 @@ Dropzone.options.dropper = {
   maxFilesize: 1025, // megabytes
   chunkSize: 1000000, // bytes
   maxFiles: 4,
-  accept: function(file, done) {
+  accept: function (file, done) {
     console.log("uploaded");
     done();
   },
-  init: function() {
-    this.on("maxfilesexceeded", function(file){
-        alert("Le nombre maximum est 4 fichier tif");
+  init: function () {
+    this.on("maxfilesexceeded", function (file) {
+      alert("Le nombre maximum est 4 fichier tif");
     });
   }
 };
@@ -225,48 +225,111 @@ Dropzone.options.dropper = {
 smsgSpan
 simpleBtn = document.getElementById("sbtn")
 smsgSpan = document.getElementById("smsgSpan")
-simpleBtn.addEventListener('click',function (e)
-{
+simpleBtn.addEventListener('click', function (e) {
 
 
   var target = e.target;
-  setTimeout(function()
-  {
+  setTimeout(function () {
     target.classList.add('loading');
     smsgSpan.style.display = "block";
-  },125);
+  }, 125);
 
   // setTimeout(function()
   // {
   //   target.classList.add('ready');
   // },4300);
 
-},false);
+}, false);
 
 
 advancedBtn = document.getElementById("abtn")
 
 msgSpan = document.getElementById("msgSpan")
 
-advancedBtn.addEventListener('click',function (e)
-{
+advancedBtn.addEventListener('click', function (e) {
+
+
 
   //console.log("advanced btn clicked")
-  
-  
   var target = e.target;
-  setTimeout(function()
-  {
+  setTimeout(function () {
     target.classList.add('loading');
     msgSpan.style.display = "block";
 
-  },125);
+  }, 125);
 
   // setTimeout(function()
   // {
   //   target.classList.add('ready');
   // },4300);
 
-},false);
+}, false);
+
+
+
+// progres bar
+
+window.onload = function () 
+{
+  const socket = io();
+  let socketid = undefined
+  socket.connect("https://localhost:5000");
+  let progressBar = document.getElementById("simpleFormeProgressBar");
+  let advancedProgressBar = document.getElementById("adcancedFormeProgressBar");
+
+  socket.on("connect", function () {
+    console.log("Connected!");
+    socketid = socket.id;
+    console.log("ID: " + socketid);
+  })
+  socket.on("disconnect", function () {
+    console.log("disconnected!");
+    socket.disconnect()
+  })
+  socket.on("update progress", function (perecent) {
+    //do something with percent
+    console.log("Got perecent: " + perecent);
+    progressBar.style.width = perecent + "%";
+  })
+  ////////////////////////////////////////
+
+  socket.on("update progress advaned", function (perecent) {
+    //do something with percent
+    console.log("Got perecent: " + perecent);
+    advancedProgressBar.style.width = perecent + "%";
+  })
+
+
+
+
+  /////////////////////////////////////////
+  let mainForm = document.getElementById("Hform");
+  mainForm.onsubmit = function (event) 
+  {
+    event.preventDefault();
+    fetch("/simpleForm/" + socketid, {
+      method: "POST"
+    }).then(response => {
+      setTimeout(function () {
+        progressBar.style.width = "0%";
+      }, 1000);
+    });
+  }
+
+  // advanced form
+
+  let advancedForm = document.getElementById("Aform");
+  advancedForm.onsubmit = function (event) 
+  {
+    event.preventDefault();
+    fetch("/advancedForm/" + socketid, {
+      method: "POST"
+    }).then(response => {
+      setTimeout(function () {
+        advancedProgressBar.style.width = "0%";
+      }, 1000);
+    });
+  }
+}
 
 

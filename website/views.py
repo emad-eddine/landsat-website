@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template,request,redirect,url_for,make_response,flash,jsonify
+from flask import Blueprint,Response,render_template,request,redirect,url_for,make_response,flash,jsonify
 from flask_login import login_required,current_user
 from .models import *
 from werkzeug.utils import secure_filename
@@ -14,6 +14,10 @@ from werkzeug.utils import secure_filename
 from .apiHandler import *
 import wget
 from pathlib import Path
+from .socketHandler import socketio
+
+
+
 
 UPLOAD_FOLDER = 'website\\temp\\'
 ALLOWED_EXTENSIONS = {'tif'}
@@ -37,11 +41,15 @@ def goHome():
 @login_required
 def goHeat():
     return render_template("heat.html",user = current_user)
-
-
-@view.route("/simpleForm",methods=['GET','POST'])
+@view.route("/board")
 @login_required
-def simpleForme():
+def goBoard():
+    return render_template("dashboard.html",user = current_user)
+
+
+@view.route("/simpleForm/<socketid>",methods=['GET','POST'])
+@login_required
+def simpleForme(socketid):
     if request.method == 'POST':
 
         # check if the submit comes from simple or advanced option
@@ -53,11 +61,18 @@ def simpleForme():
         simpleLocationName = request.form.get("slocation")
         simpleStudyDate = request.form.get("simpleStudyDate")
         simpleStudyProfile = request.form.get("simpleProfileOption")
-        print("simple")
-        import time
-        time.sleep(10)
+        #print("simple")
+        #print(type(socketIo))
+        print("hello wo==========================")
 
-            #check if there is scenes with given infos
+        import time
+        for x in range(1,6):
+            socketio.emit("update progress", x * 20, to=socketid)
+            time.sleep(2)
+    return Response(status=204)
+
+        # return Response(status=204)
+        #     #check if there is scenes with given infos
 
             # first we need to get API key will be valid for 1 hours and store it
 
@@ -122,35 +137,45 @@ def simpleForme():
     
 
 
-@view.route("/advancedForm",methods=['GET','POST'])
+@view.route("/advancedForm/<socketid>",methods=['GET','POST'])
 @login_required
-def advancedForme():
+def advancedForme(socketid):
 
     if request.method == 'POST':
         # get user form
+        print('hello ')
         advancedLocationName = request.form.get("Alocation")
         advancedStudyDate = request.form.get("dateFrom")
         advancedStudyProfile = request.form.get("advancedProfileOption")
-        
-        #check if all bands are stored before continue
-        #get all bands from temp/userIdfolder folder
 
+    
+        # #check if all bands are stored before continue
+        socketio.emit("update progress adva", 20, to=socketid)
+        # #get all bands from temp/userIdfolder folder
+        
         user = current_user
         TEMP_ID = str(user.get_id())
-        BANDS_BATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
+        BANDS_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
+        RESULT_PATH = os.path.join(BANDS_PATH, "result.tif")
+        socketio.emit("update progress adva", 60, to=socketid)
 
-        bands,isFull = getBands(BANDS_BATH,BANDS_LIST)
+        bands,isFull = getBands(BANDS_PATH,BANDS_LIST)
 
-        #if all required bands are selected 4 5 10 11 continue
+        # #if all required bands are selected 4 5 10 11 continue
 
         if isFull == True :
 
             # Calculate LST 
+            socketio.emit("update progress adva", 80, to=socketid)
             LST_B10,LST_B11 = calcLST_SC(bands)
 
             # save the result
+            
+            saveLSTInTif(imagery=bands[10],lst=LST_B10,path=RESULT_PATH)
+            socketio.emit("update progress adva", 100, to=socketid)
+        #     return Response(status=204)
 
-
+    return Response(status=204)
 
 
 

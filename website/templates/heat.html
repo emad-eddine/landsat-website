@@ -2,11 +2,12 @@
 {% block title %}Ilot Chaleur{% endblock %}
 
 {% block heatMainSec %}
-
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"
+    integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+"
+    crossorigin="anonymous"></script>
 <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
 <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.5.0/dist/svg-pan-zoom.min.js"></script>
-
 <section class="heat-section">
     <div class="info-container">
 
@@ -52,6 +53,10 @@
                     <div class="form-group">
 
                         <button id="sbtn" type="submit">Valider</button>
+                        <div class="progress">
+                            <div id="simpleFormeProgressBar" class="progress-bar bg-success" role="progressbar"
+                                style="width: 1%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
                         <small id="smsgSpan">Cela peut prendre quelque minutes...</small>
                     </div>
                 </form>
@@ -111,7 +116,10 @@
                     </fieldset>
                     <div class="form-group">
                         <button id="abtn" type="submit">Valider</button>
-
+                        <div class="progress">
+                            <div id="adcancedFormeProgressBar" class="progress-bar bg-success" role="progressbar"
+                                style="width: 1%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
                     </div>
                     <small id="msgSpan">Cela peut prendre quelque minutes...</small>
                 </form>

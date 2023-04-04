@@ -785,10 +785,9 @@ transform: scaleX(1);
   padding: 10px 10px 10px 15px;
 }
 
-.simpleForm,.advancedForm{
+.simpleForm,.advancedForm,.progress{
   margin: 10px;
 }
-
 .simpleForm input,.advancedForm input{
   border-color: #00021E;
 }
@@ -1110,6 +1109,7 @@ button.ready:after {
   border-radius: 25px;
 }
 
+
 .sat-file-input
 {
   display: none;
@@ -1121,4 +1121,43 @@ button.ready:after {
     display: none;
  
 }
+
+
+/**********************************************/
+
+/********* dashboard styling section **********/
+
+.board-section{
+  width: 100%;
+  height: 100vh;
+  background-color: #00021E !important;
+  display: flex;
+}
+
+.graph-container
+{
+  float: right;
+  width: 50%;
+  text-align: center;
+  height: 100vh;
+  background-color: #00021E;
+  margin-top: 30px;
+}
+.map-container{
+  float: left;
+  width: 50%;
+  height: 100vh;
+  margin: 30px;
+  background-color: #fff;
+  border-radius: 20px;
+  padding: 10px 10px 10px 15px;
+}
+
+#map
+{
+  width: 100%;
+  height: 100%;
+}
+
+
 

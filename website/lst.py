@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 import os
+import math
 
 
 
@@ -178,8 +179,96 @@ def showLSTMap(LST):
     plt.imshow(x, cmap='jet')
     plt.colorbar()
 
+#############################################
+
+################ Mono windows algorithme ###############
 
 
-def saveLSTInTif(lst):
+# constants
+To= 26
+To_K= To + 273.15
+RH=42
+tau = 0
+RH_fraction= RH/100
 
+# calculate Emissivity according to  Van de Griend and Owe 1993
+# EV = 1.094 + 0.047*np.log(NDVI)
+
+def calculateE_Van(ndvi):
+    
+    E = 1.094 + 0.047*np.log(ndvi)
+    
+    return E
+
+
+#' Atmospheric transmittance calculation
+
+def calculateAT() :
+    
+    
+    W= 0.0981*10*0.6108**((17.27*(To_K-273.15))/ (237.3+(To_K-273.15)))*RH_fraction+0.1697
+
+    tau = -0.0164*W**2-0.04203*W+0.9715
+    
+    return tau
+
+##' Mean atmospheric temperature
+
+def MAT (To, mod):
+    To_K= To + 273.15
+    if  mod == "USA 1976 Standard": 
+        Ta = 25.940 + 0.8805*To_K
+    elif mod == "Tropical Region":
+        Ta = 17.977 + 0.9172*To_K
+    elif mod == "Mid-latitude Summer Region":
+        Ta = 16.011 + 0.9262*To_K
+    else:
+        Ta = 19.270 + 0.9112*To_K
+    return Ta
+
+
+# caluclate lst
+
+def calculateLSTMonoWindow(bt, tau, EV, Ta):
+    
+    C= EV*tau
+    D= (1-tau)*(1+(1-EV)*tau)
+    LST_mwa = (-67.355351*(1-C-D)+(0.458606*(1-C-D)+C+D)*bt-D*Ta)/C
+    
+    return LST_mwa
+
+
+### saving the result
+
+
+
+def saveLSTInTif(imagery,lst,path):
+
+    # remove the nan value from 2array (lst)
+    for i in range(lst.shape[0]):
+        for j in range(lst.shape[1]):
+            if math.isnan(lst[i][j]) == True:
+                lst[i][j] = 0
+
+    # read the image
+
+    imagery = rasterio.open(imagery)
+
+    # transform
+    t = rasterio.transform.from_bounds(*imagery.bounds,lst.shape[0],lst.shape[1])
+
+    # write the data
+    new_dataset = rasterio.open(path, 'w', driver='GTiff',
+                            height = lst.shape[1], width = lst.shape[0],
+                            count=1, dtype=str(lst.dtype),
+                            crs=imagery.crs,
+                            transform=t
+                            )
+
+    new_dataset.write(lst,1)
+    new_dataset.close()
     pass
+
+
+
+
