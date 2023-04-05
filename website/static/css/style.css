@@ -839,7 +839,11 @@ transform: scaleX(1);
   color: #000;
 }
 
-
+.simpleFormeErreur,.advancedFormeErreur
+{
+  color: #a80000;
+  font-weight: bold;
+}
 /**************************************/
 
 /* inputs validation  */

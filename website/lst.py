@@ -1,12 +1,14 @@
 # import all the required libaries
+from .utils import PROJ_DB_PATH
+import os
+os.environ['PROJ_LIB'] = PROJ_DB_PATH
 import rasterio
 from rasterio import plot
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
-import os
 import math
-
+from osgeo import gdal
 
 
 ############## LST SECTION ##############################
@@ -267,7 +269,16 @@ def saveLSTInTif(imagery,lst,path):
 
     new_dataset.write(lst,1)
     new_dataset.close()
-    pass
+
+
+
+## this function will transform the projection of tif file to EPSG:4326
+
+def changeProjection(lstPath,outputPath):
+
+    input_raster = gdal.Open(lstPath)
+    warp = gdal.Warp(outputPath,input_raster,dstSRS='EPSG:4326')
+
 
 
 

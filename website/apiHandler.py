@@ -85,6 +85,10 @@ def getDownloadUrl(bandsIds,API_KEY):
     return downloadUrl
 
 
+def logoutFromApi():
+    api.logout()
+
+
 
 
 

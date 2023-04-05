@@ -2,12 +2,11 @@
 {% block title %}Ilot Chaleur{% endblock %}
 
 {% block heatMainSec %}
-<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"
-    integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+"
-    crossorigin="anonymous"></script>
-<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+
 <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
 <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.5.0/dist/svg-pan-zoom.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+
 <section class="heat-section">
     <div class="info-container">
 
@@ -26,7 +25,7 @@
                 <form action="simpleForm" method="post" class="simpleForm" id="Hform" name="heat-form"
                     enctype="multipart/form-data">
 
-                    <input type="hidden" name="form_name" value="simple" />
+                    <span class="simpleFormeErreur">{{ErrorMsg}}</span>
                     <fieldset>
                         <legend>Location De La Zone D'étude</legend>
                         <div class="form-group">
@@ -46,7 +45,6 @@
 
                             <select name="simpleProfileOption" id="simpleProfile">
 
-
                             </select>
                         </div>
                     </fieldset>
@@ -61,6 +59,7 @@
                     </div>
                 </form>
             </div>
+            <span class="advancedFormeErreur">{{aErrorMsg}}</span>
             <div class="tab-pane fade" id="avance" role="tabpanel" aria-labelledby="advaned-tab">
                 <form method="POST" action="upload" class="myForme dropzone dz-clickable" id="dropper"
                     enctype="multipart/form-data">
@@ -335,13 +334,7 @@
         </svg>
     </div>
 </section>
-
-{% for messages in get_flashed_messages()%}
-{{messages}}
-{% endfor %}
-
+<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
 <script src="{{ url_for('static', filename='script/form.js') }}"></script>
 <script src="{{ url_for('static', filename='script/heat.js') }}"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
-
 {% endblock %}

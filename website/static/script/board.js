@@ -1,6 +1,6 @@
 // // // // map
 // // GeoTIFF
- var tiff = "http://localhost:8080/lstProjet.tif";
+ var tiff = "http://localhost:8080/2/r_10.tif";
 
 var map = L.map('map');
 

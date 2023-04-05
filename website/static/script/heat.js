@@ -84,9 +84,9 @@ function createProfileList(dateTag, selectTag) {
 
   if (parseInt(selectedYear) == yyyy) // we are in the same choosing year
   {
-
+    var mm = today.getMonth() + 1;
     // compare the intervalle
-    devideInter = parseInt(parseInt(selectedMonth) / 3)
+    devideInter = parseInt(parseInt(mm) / 3)
 
     if (devideInter == 1) {
       addOption(selectTag, "3m", "3 mois")
@@ -202,6 +202,7 @@ map.addEventListener('click', function (e) {
   }
 })
 
+
 // dropzone handeling
 Dropzone.options.dropper = {
   paramName: "file",
@@ -222,22 +223,20 @@ Dropzone.options.dropper = {
   }
 };
 
-smsgSpan
+
+// btn animation when clicked
+
 simpleBtn = document.getElementById("sbtn")
 smsgSpan = document.getElementById("smsgSpan")
+
 simpleBtn.addEventListener('click', function (e) {
 
-
+  console.log("simple btn clicked")
   var target = e.target;
   setTimeout(function () {
     target.classList.add('loading');
     smsgSpan.style.display = "block";
   }, 125);
-
-  // setTimeout(function()
-  // {
-  //   target.classList.add('ready');
-  // },4300);
 
 }, false);
 
@@ -246,90 +245,27 @@ advancedBtn = document.getElementById("abtn")
 
 msgSpan = document.getElementById("msgSpan")
 
+droped = document.getElementById("dropper")
+
 advancedBtn.addEventListener('click', function (e) {
-
-
 
   //console.log("advanced btn clicked")
   var target = e.target;
   setTimeout(function () {
     target.classList.add('loading');
     msgSpan.style.display = "block";
+    droped.disabled = true;
+    
 
   }, 125);
 
-  // setTimeout(function()
-  // {
-  //   target.classList.add('ready');
-  // },4300);
-
 }, false);
 
+// handling progress bar and socket communication
 
-
-// progres bar
-
-window.onload = function () 
-{
-  const socket = io();
-  let socketid = undefined
-  socket.connect("https://localhost:5000");
-  let progressBar = document.getElementById("simpleFormeProgressBar");
-  let advancedProgressBar = document.getElementById("adcancedFormeProgressBar");
-
-  socket.on("connect", function () {
-    console.log("Connected!");
-    socketid = socket.id;
-    console.log("ID: " + socketid);
-  })
-  socket.on("disconnect", function () {
-    console.log("disconnected!");
-    socket.disconnect()
-  })
-  socket.on("update progress", function (perecent) {
-    //do something with percent
-    console.log("Got perecent: " + perecent);
-    progressBar.style.width = perecent + "%";
-  })
-  ////////////////////////////////////////
-
-  socket.on("update progress advaned", function (perecent) {
-    //do something with percent
-    console.log("Got perecent: " + perecent);
-    advancedProgressBar.style.width = perecent + "%";
-  })
-
-
-
-
-  /////////////////////////////////////////
-  let mainForm = document.getElementById("Hform");
-  mainForm.onsubmit = function (event) 
-  {
-    event.preventDefault();
-    fetch("/simpleForm/" + socketid, {
-      method: "POST"
-    }).then(response => {
-      setTimeout(function () {
-        progressBar.style.width = "0%";
-      }, 1000);
-    });
-  }
-
-  // advanced form
-
-  let advancedForm = document.getElementById("Aform");
-  advancedForm.onsubmit = function (event) 
-  {
-    event.preventDefault();
-    fetch("/advancedForm/" + socketid, {
-      method: "POST"
-    }).then(response => {
-      setTimeout(function () {
-        advancedProgressBar.style.width = "0%";
-      }, 1000);
-    });
+if (!!window.EventSource) {
+  var source = new EventSource();
+  source.onmessage = function(e) {
+    $("#smsgSpan").text(e.data);
   }
 }
-
-

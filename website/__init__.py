@@ -7,7 +7,7 @@ from os import path
 from .models import *
 from .views import *
 from .auths import *
-from .socketHandler import *
+
 
 
 
@@ -23,20 +23,15 @@ def create_app():
     app.config['SECRET_KEY'] = '1221200015'
     # postgresql ://username:password@localhost:port/dbname
     app.config['SQLALCHEMY_DATABASE_URI']="postgresql://postgres:0000@localhost:5432/webAppDB"
-
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-    
+
     app.register_blueprint(view, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
     
 
 
     app.register_error_handler(404, page_not_found)
-
     db.init_app(app)
-    socketio.init_app(app=app)
-
-
     loginManger = LoginManager()
     loginManger.login_view = "auth.goLogin"
     loginManger.init_app(app)
@@ -46,5 +41,6 @@ def create_app():
         return Users.query.get(int(user_id))
     
     return app
+
 
 
