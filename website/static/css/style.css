@@ -844,6 +844,12 @@ transform: scaleX(1);
   color: #a80000;
   font-weight: bold;
 }
+
+
+.from-form,#simpleDateFrom,.to-form,#simpleDateTo,#advancedDateTo,#advancedDateFrom
+{
+  margin-left: 5px;
+}
 /**************************************/
 
 /* inputs validation  */

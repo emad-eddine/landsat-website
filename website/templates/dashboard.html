@@ -16,7 +16,10 @@
 <!-- Plugin -->
 <script src="https://ihcantabria.github.io/Leaflet.CanvasLayer.Field/dist/leaflet.canvaslayer.field.js"></script>
 
-
+<!-- chart js for visualisation    -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.3.2/chart.min.js" crossorigin="anonymous"
+    referrerpolicy="no-referrer"></script>
+<script src="{{ url_for('static', filename='script/jquery-3.6.4.js') }}"></script>
 <section class="board-section">
     <div class="map-container">
 
@@ -24,11 +27,158 @@
         </div>
     </div>
     <div class="graph-container">
-
+        <canvas id="countries" width="600" height="400"></canvas>
     </div>
-
 </section>
+
+
+
+<script>
+
+    // this section for charts
+    var ctx = document.getElementById("countries").getContext("2d");
+
+
+    var lineChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels:['2022-08', '2023-01', '2023-04']  ,
+    datasets: [
+        {
+            label: "Band 10",
+            data: [44.13858679701646, 22.23611662514449, 31.2804812772958],
+            fill : false,
+            borderColor : "rgb(76,123,96)",
+            lineTension: 0.7
+        }
+
+    ]
+    
+        },
+    options:
+    {
+        responsive: false
+    }
+    });
+    /*
+    
+    var lineChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: {{ labels | safe }},
+    datasets: [
+        {
+            label: "Band 10",
+            data: {{ band10Data| safe }},
+            fill : false,
+            borderColor : "rgb(76,123,96)",
+            lineTension: 0.7
+        },
+        {
+            label: "Band 11",
+            data: {{ band11Data| safe }},
+            fill : false,
+            borderColor : "rgb(231,55,96)",
+            lineTension: 0.7 
+        }
+    ]
+    
+        },
+    options:
+    {
+        responsive: false
+    }
+    });
+
+*/
+
+
+    // this section for charts
+    // // GeoTIFF
+    var tiff = "http://localhost:8080/2/2022-08/clip_11.tif";
+
+    var map = L.map('map');
+
+    /* Basemap */
+    var url = 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    L.tileLayer(url, {
+        attribution: 'CartoDB & OSM',
+        subdomains: 'abc',
+        maxZoom: 19
+    }).addTo(map);
+
+    /*
+        Some ScalarField layers with custom styles
+    */
+    fetch(tiff).then(r => r.arrayBuffer()).then(function (buffer) {
+        var s = L.ScalarField.fromGeoTIFF(buffer);
+
+        var layer2 = L.canvasLayer.scalarField(s, {
+            //color: chroma.scale(['black','red','yellow','white']).correctLightness().domain(s.range).classes(25),
+            color: chroma.scale(['blue', 'yellow', 'red']).domain([10, 50]).classes(25),
+            mouseMoveCursor: null,
+            opacity: 0.55
+        }).addTo(map);
+
+        layer2.on("click", function (e) {
+            if (e.value !== null) {
+                console.log(e.latlng["lat"])
+                dataToSend = {
+                    "lat": e.latlng["lat"],
+                    "lon": e.latlng["lng"]
+                }
+                preformPost(dataToSend)
+                let popup = L.popup()
+                    .setLatLng(e.latlng)
+                    .setContent(`${e.value}`)
+                    .openOn(map);
+
+
+
+
+                // get the position in map
+
+
+
+                // send post request
+                //preformPost()
+            }
+        });
+        map.fitBounds(layer2.getBounds());
+    })
+
+    // this is a post request for get in the data for charts
+    function preformPost(sendingData) {
+        jQuery.ajax({
+            type: 'POST',// http method
+            url: "profile",
+            data: sendingData,// data to submit
+            success: function(responseObj) 
+            {
+                console.log(responseObj)
+                updateDoughnutChart(responseObj["labels"],responseObj["band10"])
+            }  
+        });
+    }
+
+    function updateDoughnutChart(labels,band10Data){
+        
+        lineChart.data.labels = labels;
+        lineChart.data.datasets[0].data = band10Data;
+
+        //console.log(labels)
+        //console.log(band10Data)
+
+        lineChart.update();
+      }
+      
+
+
+</script>
+
+
 <script src="https://unpkg.com/georaster"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/chroma-js/2.1.0/chroma.min.js"></script>
 <script src="{{ url_for('static', filename='script/board.js') }}"></script>
+
 {% endblock %}

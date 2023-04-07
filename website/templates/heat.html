@@ -36,17 +36,26 @@
                     <fieldset>
                         <legend>Informations Des Données Et Profile D'étude</legend>
                         <div class="form-group">
-                            <label for="simpleDate">Date d'étude</label>
+                            <label for="simpleDate">Date de la scène</label>
                             <input type="month" min="2008-01" id="simpleDate" class="text form-control" type="date"
                                 name="simpleStudyDate">
                         </div>
                         <div class="form-group">
-                            <label for="simpleProfile">Intervalle du profile d'étude</label>
+                            <label for="simpleDate">Intervalle du profile d'étude</label>
+                        <div class="form-row">
 
-                            <select name="simpleProfileOption" id="simpleProfile">
-
-                            </select>
+                            <div class="form-group form-inline from-form">
+                                <label for="simpleDateFrom" >De</label>
+                                <input type="month" min="2008-01" id="simpleDateFrom" class="text form-control" type="date"
+                                    name="simpleStudyDateFrom">    
+                            </div>                        
+                            <div class="form-group form-inline to-form">
+                                <label for="simpleDateTo" >A</label>
+                                <input type="month" min="2008-01" id="simpleDateTo" class="text form-control" type="date"
+                                    name="simpleStudyDateTo">
+                            </div>
                         </div>
+                    </div>
                     </fieldset>
                     <div class="form-group">
 
@@ -91,7 +100,7 @@
                     <fieldset>
                         <legend>Informations Des Données Et Profile D'étude</legend>
                         <div class="form-group">
-                            <label for="advancedDate">La date des données</label>
+                            <label for="advancedDate">La date des scénes</label>
                             <input type="month" min="2008-01" id="advancedDate" class="text form-control" type="date"
                                 name="dateFrom">
                         </div>
@@ -104,14 +113,20 @@
                             </div>
                         </div>
                         <div class="form-group">
-
+                            <label for="simpleDate">Intervalle du profile d'étude</label>
+                        <div class="form-row">
+                            <div class="form-group form-inline from-form">
+                                <label for="advancedDateFrom" >De</label>
+                                <input type="month" min="2008-01" id="advancedDateFrom" class="text form-control" type="date"
+                                    name="advancedStudyDateFrom">    
+                            </div>                        
+                            <div class="form-group form-inline to-form">
+                                <label for="advancedDateTo" >A</label>
+                                <input type="month" min="2008-01" id="advancedDateTo" class="text form-control" type="date"
+                                    name="advancedStudyDateTo">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="advancedProfile">Intervalle du profile d'étude</label>
-
-                            <select name="advancedProfileOption" id="advancedProfile">
-                            </select>
-                        </div>
+                    </div>
                     </fieldset>
                     <div class="form-group">
                         <button id="abtn" type="submit">Valider</button>

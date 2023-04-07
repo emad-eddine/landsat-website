@@ -11,6 +11,13 @@ today = yyyy + '-' + mm
 document.querySelector("#simpleDate").setAttribute("max", today);
 document.querySelector("#advancedDate").setAttribute("max", today);
 
+//simple form date picker range
+document.querySelector("#simpleDateFrom").setAttribute("max", today);
+document.querySelector("#simpleDateTo").setAttribute("max", today);
+// advanced form date picker range
+document.querySelector("#advancedDateFrom").setAttribute("max", today);
+document.querySelector("#advancedDateTo").setAttribute("max", today);
+
 
 /* show shape file value after file select */
 document.querySelector('.custom-file-input').addEventListener('change', function (e) {
@@ -37,79 +44,79 @@ document.querySelector('.satInput').addEventListener('change', function (e) {
 })
 
 
-// script for profile date list
+// // script for profile date list
 
-// get simple option date input
+// // get simple option date input
 
-var simpleOptionInputDate = document.querySelector("#simpleDate")
-var simpleOptionProfile = document.querySelector("#simpleProfile")
-var advancedOptionInputDate = document.querySelector("#advancedDate")
-var advancedOptionProfile = document.querySelector("#advancedProfile")
+// var simpleOptionInputDate = document.querySelector("#simpleDate")
+// var simpleOptionProfile = document.querySelector("#simpleProfile")
+// var advancedOptionInputDate = document.querySelector("#advancedDate")
+// var advancedOptionProfile = document.querySelector("#advancedProfile")
 
-simpleOptionInputDate.addEventListener("change", function (e) {
-  // remove all select tag child
-  simpleOptionProfile.innerHTML = '';
-  createProfileList(simpleOptionInputDate, simpleOptionProfile)
-})
-advancedOptionInputDate.addEventListener("change", function (e) {
-  // remove all select tag child
-  advancedOptionProfile.innerHTML = '';
-  createProfileList(advancedOptionInputDate, advancedOptionProfile)
-})
-
-
-function addOption(selectTag, value, text) {
-  // create option using DOM
-  const newOption = document.createElement('option');
-  const optionText = document.createTextNode(text);
-  // set option text
-  newOption.appendChild(optionText);
-  // and option value
-  newOption.setAttribute('value', value);
-  selectTag.appendChild(newOption);
-}
+// simpleOptionInputDate.addEventListener("change", function (e) {
+//   // remove all select tag child
+//   simpleOptionProfile.innerHTML = '';
+//   createProfileList(simpleOptionInputDate, simpleOptionProfile)
+// })
+// advancedOptionInputDate.addEventListener("change", function (e) {
+//   // remove all select tag child
+//   advancedOptionProfile.innerHTML = '';
+//   createProfileList(advancedOptionInputDate, advancedOptionProfile)
+// })
 
 
-function createProfileList(dateTag, selectTag) {
-  //console.log(simpleOptionInputDate.value) // year-month 2023-05
-  var selectedDate = dateTag.value.split('-');
-  var selectedYear = selectedDate[0]
-  var selectedMonth = selectedDate[1]
+// function addOption(selectTag, value, text) {
+//   // create option using DOM
+//   const newOption = document.createElement('option');
+//   const optionText = document.createTextNode(text);
+//   // set option text
+//   newOption.appendChild(optionText);
+//   // and option value
+//   newOption.setAttribute('value', value);
+//   selectTag.appendChild(newOption);
+// }
 
-  // calculate the the intervall
-  var today = new Date();
-  var yyyy = today.getFullYear();
+
+// function createProfileList(dateTag, selectTag) {
+//   //console.log(simpleOptionInputDate.value) // year-month 2023-05
+//   var selectedDate = dateTag.value.split('-');
+//   var selectedYear = selectedDate[0]
+//   var selectedMonth = selectedDate[1]
+
+//   // calculate the the intervall
+//   var today = new Date();
+//   var yyyy = today.getFullYear();
 
 
 
-  if (parseInt(selectedYear) == yyyy) // we are in the same choosing year
-  {
-    var mm = today.getMonth() + 1;
-    // compare the intervalle
-    devideInter = parseInt(parseInt(mm) / 3)
+//   if (parseInt(selectedYear) == yyyy) // we are in the same choosing year
+//   {
+//     var mm = today.getMonth() + 1;
+//     // compare the intervalle
+//     devideInter = parseInt(parseInt(mm) / 3)
 
-    if (devideInter == 1) {
-      addOption(selectTag, "3m", "3 mois")
-    }
-    else if (devideInter == 2 || devideInter == 3) {
-      addOption(selectTag, "3m", "3 mois")
-      addOption(selectTag, "6m", "6 mois")
-    }
-    else if (devideInter == 4) {
-      addOption(selectTag, "3m", "3 mois")
-      addOption(selectTag, "6m", "6 mois")
-      addOption(selectTag, "12m", "12 mois")
-    }
-  }
-  else if (parseInt(selectedYear) < yyyy) {
-    addOption(selectTag, "3m", "3 mois")
-    addOption(selectTag, "6m", "6 mois")
-    addOption(selectTag, "12m", "12 mois")
-  }
-  else {
-    selectTag.innerHTML = '';
-  }
-}
+//     if (devideInter == 1) {
+//       addOption(selectTag, "3m", "3 mois")
+//     }
+//     else if (devideInter == 2 || devideInter == 3) {
+//       addOption(selectTag, "3m", "3 mois")
+//       addOption(selectTag, "6m", "6 mois")
+//     }
+//     else if (devideInter == 4) {
+//       addOption(selectTag, "3m", "3 mois")
+//       addOption(selectTag, "6m", "6 mois")
+//       addOption(selectTag, "12m", "12 mois")
+//     }
+//   }
+//   else if (parseInt(selectedYear) < yyyy) {
+//     addOption(selectTag, "3m", "3 mois")
+//     addOption(selectTag, "6m", "6 mois")
+//     addOption(selectTag, "12m", "12 mois")
+//   }
+//   else {
+//     selectTag.innerHTML = '';
+//   }
+// }
 
 
 

@@ -26,16 +26,27 @@ def searchForScene(apiLogin,lat,long,startData,endDate):
     return scenes
 
 # we need to use LANDSAT8 L1
-def getScenesWithL1(scenes):
-    sceneId = []
-    productId = []
-    for s in scenes:
-        id = str(s["display_id"])[ 0 : 7 ]
-        if id == "LC08_L1": 
-            sceneId.append(s["entity_id"]) 
-            productId.append(s["landsat_product_id"])
+def checkSceneIsLevelOne(scene):
 
-    return sceneId,productId
+    sceneId = ""
+
+    id = str(scene["display_id"])[ 0 : 7 ]
+    if id == "LC08_L1": 
+        sceneId = scene["entity_id"] 
+           
+    return sceneId
+
+def checkSceneIdsLevelOneForProfile(scene):
+
+    sceneId = ""
+    date = ""
+
+    id = str(scene["display_id"])[ 0 : 7 ]
+    if id == "LC08_L1": 
+        sceneId = scene["entity_id"] 
+        date = scene["acquisition_date"] 
+        date = str(date)[0:7] 
+    return sceneId,date
 
 
 def getDownloadOption(entity_id,API_KEY):
@@ -72,17 +83,24 @@ def getIDsForDownloadUrlForBand(bandsList,downloadOptions):
     return bandsIds
 
 
-def getDownloadUrl(bandsIds,API_KEY):
-    url = api.download_request(
-    dataset = API_DATASET,
-    entity_id = bandsIds["entityId"],
-    product_id = bandsIds["productId"],
-    api_key=API_KEY
-    )
-    for d1 in url['data']["availableDownloads"]:
-        downloadUrl = d1["url"]
+def getDownloadUrl(bandsIds,BAND_LIST,API_KEY):
+    
+    urls = {}
 
-    return downloadUrl
+    for b in BAND_LIST :
+        ur = api.download_request(
+        dataset = str(API_DATASET),
+        entity_id = bandsIds[b]["entityId"],
+        product_id = bandsIds[b]["productId"],
+        api_key=API_KEY)
+
+        for d1 in ur['data']["availableDownloads"]:
+            url = d1["url"]
+
+        urls[b] = url
+    
+    return urls
+    
 
 
 def logoutFromApi():

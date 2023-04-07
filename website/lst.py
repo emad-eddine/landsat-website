@@ -9,7 +9,7 @@ from PIL import Image
 import numpy as np
 import math
 from osgeo import gdal
-
+from rasterio.windows import Window
 
 ############## LST SECTION ##############################
 
@@ -280,6 +280,33 @@ def changeProjection(lstPath,outputPath):
     warp = gdal.Warp(outputPath,input_raster,dstSRS='EPSG:4326')
 
 
+########################################################################
 
+#### this function will get pixel value from tif using lan and lng
+
+def getPixelValue(BandFile,lat,lng):
+
+    with rasterio.open(BandFile) as f:
+        # Load metadata
+        meta = f.meta
+    
+        # My target coordinates
+        x_coord = float(lng) #lng
+        y_coord = float(lat) #lat
+    
+        # Use the transform in the metadata and your coordinates
+        rowcol = rasterio.transform.rowcol(meta['transform'], xs=x_coord, ys=y_coord)
+
+        # rowcol value: ex (977994, 978126)
+
+        y = rowcol[0]
+        x = rowcol[1]
+
+        # Load specific pixel only using a window
+        window = Window(x,y,1,1)
+        arr = f.read(window=window)
+        value = arr[0][0][0]
+
+    return value
 
 

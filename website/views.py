@@ -40,11 +40,6 @@ def goHome():
 @login_required
 def goHeat():
     return render_template("heat.html",user = current_user)
-@view.route("/board")
-@login_required
-def goBoard():
-    return render_template("dashboard.html",user = current_user)
-
 
 
 ################## handling form sumbition
@@ -56,13 +51,18 @@ def simpleForme():
         # first we need to get the location name,desired date and study profile
         simpleLocationName = request.form.get("slocation")
         simpleStudyDate = request.form.get("simpleStudyDate")
-        simpleStudyProfile = request.form.get("simpleProfileOption")
+        simpleStudyDateFrom = request.form.get("simpleStudyDateFrom")
+        simpleStudyDateTo = request.form.get("simpleStudyDateTo")
 
+
+        lon = 0
+        lat = 0
 
         #check if there is scenes with given infos
         # first we need to get API key will be valid for 1 hours and store it
 
         try:
+            logoutFromApi()
             apiLogin,API_KEY = createSeason()
             print(API_KEY)
         except:
@@ -97,19 +97,40 @@ def simpleForme():
             
             
             # now lets search for the scene with LC08_L1 from 'display_id': 'LC09_L1TP_198035_20230326_20230326_02_T1'
-            downloadUrlLists = searchScenesLevel1(apiLogin=apiLogin,
-                                                  lat=lat,
-                                                  lon=lon,
-                                                  startDate=startDate,
-                                                  endDate=endDate,
-                                                  API_KEY=API_KEY,
-                                                  allScenes=False)
-          
+            scenes = searchForScene(apiLogin=apiLogin,
+                                        lat=lat,
+                                        long=lon,
+                                        startData=startDate,
+                                        endDate=endDate)
+            
+            levelOneSceneId = ""
+            try:
+                # in that case we need just one scene
+                for s in scenes:
+                    levelOneSceneId = checkSceneIsLevelOne(s)
+                    if levelOneSceneId != "" or levelOneSceneId is not None:
+                        break
+                if levelOneSceneId == "" or levelOneSceneId is None:
+                    return render_template("heat.html",user = current_user,ErrorMsg = "Aucune scene a été trouvé avec niveau 1!")
+            except:
+                return render_template("heat.html",user = current_user,ErrorMsg = "Aucune scene a été trouvé!")
+            #print("simple scenes id ")
+            #print(levelOneSceneId)
+            # get download option for this scenes
             try :
-                #check if there is dir with user id if not lets  create onn
+                downloadOption = getDownloadOption(levelOneSceneId,API_KEY)
 
-                user = current_user
-                TEMP_ID = str(user.get_id())
+            # get the ids of bands so we can get the download link
+
+                bandsIds = getIDsForDownloadUrlForBand(bandsList=BANDS_LIST,downloadOptions=downloadOption)
+                #print(bandsIds)
+            # get download urls for each band
+
+                urls = getDownloadUrl(bandsIds=bandsIds,BAND_LIST=BANDS_LIST,API_KEY=API_KEY)
+
+                #check if there is dir with user id if not lets  create one
+                userUsed = current_user
+                TEMP_ID = str(userUsed.get_id())
                 SAVE_FOLDER_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
                 
                 try:
@@ -121,124 +142,160 @@ def simpleForme():
 
                 # lets start the download and saving the .tif(s)
                 try:
-                    for url in downloadUrlLists:
-                        for band in BANDS_LIST:
-                            FULL_PATH = str(SAVE_FOLDER_PATH) + "/" + str(band) + ".tif"
-                            wget.download(url[band], FULL_PATH)
+                    for b in BANDS_LIST:
+                        FULL_PATH = str(SAVE_FOLDER_PATH) + "/" + str(b) + ".tif"
+                        #wget.download(urls[b], FULL_PATH)
+                        #print(urls[b])
                 except:
                     logoutFromApi()
-                    return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors téléchargement des Scenes!essayer plus tard!")
+                    return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors le téléchargement des Scenes!essayer plus tard!")
             except:
                 logoutFromApi()
-                return render_template("heat.html",user = current_user,ErrorMsg = "Aucune Scene a été trouvé!")
+                return render_template("heat.html",user = current_user,ErrorMsg = "Aucune Lien de téléchargement a été trouvé!")
 
             # so far we should have all the bands we need to calculate LST
-
+            # lets check if we got all the required bands
+            # calculate LST
             user = current_user
             TEMP_ID = str(user.get_id())
             BANDS_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
-            PARENT_RESULT_PATH = os.path.join(BANDS_PATH, "results")
+            isCalculated = __applyLST__(BANDS_PATH,TEMP_ID,"")
+
+            if isCalculated == False:
+                logoutFromApi()
+                return render_template("heat.html",user = current_user,ErrorMsg = "Erreur il manque des fichier.tif!")
+            #__applyLST__(BANDS_PATH,TEMP_ID)
+
+            ##################### end of lst calculation ###################
+            ##
+            ##
+            ##
+            #############################################
+            # after that lets handel the profile
+            # after we get location lets create time stamp    
+            # ie 2023-03 => 2023-03-01 -> 2023-03-30
+
+            print("profile start handeling")
             try:
-                if os.path.isdir(PARENT_RESULT_PATH) == False:
-                    os.mkdir(PARENT_RESULT_PATH)
+                profileStartDate = simpleStudyDateFrom + "-01"
+                profileEndDate = simpleStudyDateTo+ "-30"
+                print(profileStartDate)
+                print(profileEndDate)
             except:
                 logoutFromApi()
-                return render_template("heat.html",user = current_user,ErrorMsg = "Erreu lors creation reporatoire des resultat,essayer plus tards!")
-            
-            RESULT_PATH = os.path.join(PARENT_RESULT_PATH, "result.tif")
-
-            bands,isFull = getBands(BANDS_PATH,BANDS_LIST)
-
-            # #if all required bands are selected 4 5 10 11 continue
-
-            if isFull == True :
-
-            # Calculate LST 
-                LST_B10,LST_B11 = calcLST_SC(bands)
-
-            # save the result
-            
-            #saveLSTInTif(imagery=bands[10],lst=LST_B10,path=RESULT_PATH)
-
-            else :
-                logoutFromApi()
-                return render_template("heat.html",user = current_user,ErrorMsg = "Erreu lors calculer LST,essayer plus tards!")
+                return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors la récuperation la date du profile d'étude!")
 
 
-
-
-            ###################################
-            # after that lets handel the profile
-            # get number of months
-            if str(simpleStudyProfile) == "" or simpleStudyProfile is None:
-                   logoutFromApi()
-                   return render_template("heat.html",user = current_user,ErrorMsg = "Aucune profile a été choisi!")  
-            else:
-                #repeate the pre traitment
-                numberOfIteration = 0
-                if str(simpleStudyProfile) == "3m":
-                    numberOfIteration = 3
-                elif str(simpleStudyProfile) == "6m":
-                    numberOfIteration = 6
-                elif str(numberOfIteration) == "12m":
-                    numberOfIteration = 12
-
-                for i in range(1,numberOfIteration+1):
-                    # ie 2023-03 we need the year
-                    if i < 10:
-                        profileStarDate = str(simpleStudyDate)[0:4] +"-0" + i + "-01"
-                        profileEndDate = str(simpleStudyDate)[0:4] +"-0" + i + "-30"
-                    elif i >=10:
-                        profileStarDate = str(simpleStudyDate)[0:4] +"-0" + i + "-01"
-                        profileEndDate = str(simpleStudyDate)[0:4] +"-0" + i + "-30"
-
-                    #start the search
-                    downloadUrlLists = searchScenesLevel1(apiLogin=apiLogin,
-                                                  lat=lat,
-                                                  lon=lon,
-                                                  startDate=profileStarDate,
-                                                  endDate=profileEndDate,
-                                                  API_KEY=API_KEY,
-                                                  allScenes=False)
-                    
-                    if downloadUrlLists is None:
-                        print("error aucune donnee")
-                    else:
-                        print(downloadUrlLists[0])
-          
-                    try :
-                        #check if there is dir with user id if not lets  create one
-
-                        user = current_user
-                        TEMP_ID = str(user.get_id())
-                        PARENT_FOLDER_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
-                        SAVE_FOLDER_PATH = os.path.join(PARENT_FOLDER_PATH, i)
+ 
+            # lets start serching for the scenes
+            scenes = searchForScene(apiLogin=apiLogin,
+                                        lat=lat,
+                                        long=lon,
+                                        startData=profileStartDate,
+                                        endDate=profileEndDate)
+            levelOneSceneId =""
+            levelOneSceneIdList = []
+               
+            # in that case we need all the scene L1
+            try:
+                for s in scenes:
+                    levelOneSceneId,aquireDate = checkSceneIdsLevelOneForProfile(s)
+                    if str(levelOneSceneId) !="" and str(aquireDate) !="":
+                        obj = {"sceneId":levelOneSceneId,"date":aquireDate}
+                        levelOneSceneIdList.append(obj)
+                        #print(levelOneSceneId)
                 
-                        try:
-                            if os.path.isdir(SAVE_FOLDER_PATH) == False:
-                                os.mkdir(SAVE_FOLDER_PATH)
-                        except:
-                            logoutFromApi()
-                            return render_template("heat.html",user = current_user,ErrorMsg = "Erreu lors creation votre reportoire,essayer plus tards!")
+                if levelOneSceneIdList == False or levelOneSceneIdList is None:
+                    logoutFromApi()
+                    return render_template("heat.html",user = current_user,ErrorMsg = "Aucune scenes a été trouve pour le profile et avec niveau 1!")
+                                    
+                #print(levelOneSceneIdList)
+                    
+            except:
+                logoutFromApi()
+                return render_template("heat.html",user = current_user,ErrorMsg = "Aucune scenes a éte trouvé pour le profle d'étude!")
+           
+            try :
+                for sId in levelOneSceneIdList:
+                    # get download option for this scenes
+                    downloadOption = getDownloadOption(sId["sceneId"],API_KEY)
+                    #print("download options")
 
-                    # lets start the download and saving the .tif(s)
-                        try:
-                            for url in downloadUrlLists:
-                                for band in BANDS_LIST:
-                                    FULL_PATH = str(SAVE_FOLDER_PATH) + "/" + str(band) + ".tif"
-                                    print(url[band])
-                                    wget.download(url[band], FULL_PATH)
-                        except:
-                            logoutFromApi()
-                            return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors téléchargement des Scenes!essayer plus tard!")
+                    # get the ids of bands so we can get the download link
+                    bandsIds = getIDsForDownloadUrlForBand(bandsList=BANDS_LIST,downloadOptions=downloadOption)
+                    #print(bandsIds)
 
+
+                    # get download urls for each band
+                    urls = getDownloadUrl(bandsIds=bandsIds,BAND_LIST=BANDS_LIST,API_KEY=API_KEY)
+                    #print(urls)
+           
+                    #check if there is dir with user id if not lets  create one
+                    userUsed = current_user
+                    TEMP_ID = str(userUsed.get_id())
+                    PARENT_SAVE_FOLDER_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
+                    SAVE_FOLDER_PATH = os.path.join(PARENT_SAVE_FOLDER_PATH,sId["date"])
+                    try:
+                        #print("making dir ")
+                        if os.path.isdir(SAVE_FOLDER_PATH) == False:
+                            os.mkdir(SAVE_FOLDER_PATH)
                     except:
                         logoutFromApi()
-                        return render_template("heat.html",user = current_user,ErrorMsg = "Aucune Scene a été trouvé!")
+                        return render_template("heat.html",user = current_user,ErrorMsg = "Erreu lors creation votre reportoire,essayer plus tards!")
+
+                    # lets start the download and saving the .tif(s)
+                    try:
+                        for b in BANDS_LIST:
+                            FULL_PATH = str(SAVE_FOLDER_PATH) + "/" + str(b) + ".tif"
+                            print(urls[b])
+                            #wget.download(urls[b], FULL_PATH)  
+                         
+
+                        # let calculate the land surface temperature
+                        try:
+                            userUsed = current_user
+                            TEMP_ID = str(userUsed.get_id())
+
+                            folderName = sId["date"]
+                            isCalculated = True
+
+                            isCalculated = __applyLST__(SAVE_FOLDER_PATH,TEMP_ID,folderName)
+
+                            if isCalculated == False:
+                                logoutFromApi()
+                                return render_template("heat.html",user = current_user,ErrorMsg = "Erreur il manque des fichier.tif!")
+
+                        except:
+                            logoutFromApi()
+                            return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors calculer LST !essayer plus tard!")
+
+                        
+                    except:
+                        logoutFromApi()
+                        return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors le téléchargement les Scenes du profile!essayer plus tard!")
+                    
+                    
+        
+                    
+            
+            
+            
+            
+            
+            
+            
+            except:
+                logoutFromApi()
+                return render_template("heat.html",user = current_user,ErrorMsg = "Aucune Lien de téléchargement a été trouvé!")  
+        
+        ############# end of simple form #####################
+        # 
+        # 
+        # #####################################################                  
         else :
             logoutFromApi()
             return render_template("heat.html",user = current_user,ErrorMsg = "Erreur Clé API,essayer plus tard!")                
-    return render_template("heat.html",user = current_user)
+    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="")
 
 
     
@@ -251,83 +308,164 @@ def advancedForme():
         # get user form
         advancedLocationName = request.form.get("Alocation")
         advancedStudyDate = request.form.get("dateFrom")
-        advancedStudyProfile = request.form.get("advancedProfileOption")
+        advancedStudyProfileFrom = request.form.get("advancedStudyDateFrom")
+        advancedStudyProfileTo = request.form.get("advancedStudyDateTo")
 
-        if str(advancedLocationName) != "" and str(advancedStudyDate) != "" and str(advancedStudyProfile) != "":
+        if str(advancedLocationName) != "" and str(advancedStudyDate) != "" and str(advancedStudyProfileFrom) != "" and str(advancedStudyProfileTo) != "":
             
             # check if file names match the patter ie bandNum.tif => 4.tif
-
             user = current_user
             TEMP_ID = str(user.get_id())
             BANDS_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
             
-            # for file in os.listdir(BANDS_PATH):
-            #     # check if current path is a file
-            #     if os.path.isfile(os.path.join(BANDS_PATH, file)):
-            #         fileNameWitoutExt = str(file)[:-4]
+            for file in os.listdir(BANDS_PATH):
+                # check if current path is a file
+                if os.path.isfile(os.path.join(BANDS_PATH, file)):
+                    fileNameWitoutExt = str(file)[:-4]
 
-            #         isNumber = re.findall("[0-1][0-9]", fileNameWitoutExt)
+                    isNumber = re.findall("[0-1][0-9]", fileNameWitoutExt)
                     
-            #         if isNumber == False:
-            #             return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Les fichier exporter ont mauvaise notation")
+                    if isNumber == False:
+                        return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Les fichier exporter ont mauvaise notation")
 
             # at this point we got all required bands let calculate LST
 
-            bands,isFull = getBands(BANDS_PATH,BANDS_LIST)
-
             # #if all required bands are selected 4 5 10 11 continue
 
-            if isFull == True :
-                # Calculate LST 
+            __applyLST__(BANDS_PATH,TEMP_ID,"")
+
+            #============end of lst calculation############            
+            ###############################################
+            #=======this section reserved for profile=====#
+            
+            profileStartDate = advancedStudyProfileFrom + "-01"
+            profileEndDate = advancedStudyProfileTo+ "-30"
+            print(profileStartDate)
+            print(profileEndDate)
+        
+            lon = 0
+            lat = 0
+
+            #check if there is scenes with given infos
+            # first we need to get API key will be valid for 1 hours and store it
+
+            try:
+                logoutFromApi()
+                apiLogin,API_KEY = createSeason()
+                print(API_KEY)
+            except:
+                return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Erreur Clé API,essayer plus tard!")
+            if API_KEY is not None:
+                # proceded with finding the desired location
+                # first we need to get the long and lat of the location
+                #    
+                address = advancedLocationName
+                url = 'https://nominatim.openstreetmap.org/search/' + urllib.parse.quote(address) +'?format=json'
                 try :
-                    LST_B10,LST_B11 = calcLST_SC(bands)
-
-                    SAVE_PATH_B10 = os.path.join(BANDS_PATH,"pre_result_10.tif")
-                    SAVE_PATH_B11 = os.path.join(BANDS_PATH,"pre_result_11.tif")
-
-                    # pre save the tifs
-
-                    saveLSTInTif(imagery=bands[10],lst=LST_B10,path=SAVE_PATH_B10)
-                    saveLSTInTif(imagery=bands[10],lst=LST_B11,path=SAVE_PATH_B11)
-
-                    # convert the result to EPSG:4326
-
-                    RESULT_BATH = "C:\Apache24\htdocs"
-                    SAVE_FOLDER_PATH = os.path.join(RESULT_BATH, TEMP_ID)
-                
-                    try:
-                        if os.path.isdir(SAVE_FOLDER_PATH) == False:
-                             os.mkdir(SAVE_FOLDER_PATH)
-                    except:
-                        return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Erreur lors Créer la résultat! Essayer plus tards")
-                    
-                    OUTPUT_PATH_B10 = os.path.join(SAVE_FOLDER_PATH,"r_10.tif")
-                    OUTPUT_PATH_B11 = os.path.join(SAVE_FOLDER_PATH,"r_11.tif")
-
-                    changeProjection(lstPath=SAVE_PATH_B10,outputPath=OUTPUT_PATH_B10)
-                    changeProjection(lstPath=SAVE_PATH_B11,outputPath=OUTPUT_PATH_B11)
-
-
-                    ### delete the temp folder
-
+                    response = requests.get(url).json()
+                    lat = float(response[0]["lat"])
+                    lon = float(response[0]["lon"])
+                    print(lat)
+                    print(lon)
                 except:
-                    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Erreur lors calculer LST! Essayer plus tards")
+                    logoutFromApi()
+                    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Erreur lors la récuperation du position géographique!")
+                
+
+                # lets start serching for the scenes
+                scenes = searchForScene(apiLogin=apiLogin,
+                                        lat=lat,
+                                        long=lon,
+                                        startData=profileStartDate,
+                                        endDate=profileEndDate)
+                levelOneSceneId =""
+                levelOneSceneIdList = []
+               
+                # in that case we need all the scene L1
+                try:
+                    for s in scenes:
+                        levelOneSceneId,aquireDate = checkSceneIdsLevelOneForProfile(s)
+                        if str(levelOneSceneId) !="" and str(aquireDate) !="":
+                            obj = {"sceneId":levelOneSceneId,"date":aquireDate}
+                            levelOneSceneIdList.append(obj)
+                        #print(levelOneSceneId)
+                
+                    if levelOneSceneIdList == False or levelOneSceneIdList is None:
+                        logoutFromApi()
+                        return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Aucune scenes a été trouve pour le profile et avec niveau 1!")
+                                    
+                    print(levelOneSceneIdList)
+                    
+                except:
+                    logoutFromApi()
+                    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Aucune scenes a éte trouvé pour le profle d'étude!")
+           
+                try :
+                    for sId in levelOneSceneIdList:
+                    # get download option for this scenes
+                        downloadOption = getDownloadOption(sId["sceneId"],API_KEY)
+                    #print("download options")
+
+                    # get the ids of bands so we can get the download link
+                        bandsIds = getIDsForDownloadUrlForBand(bandsList=BANDS_LIST,downloadOptions=downloadOption)
+                    #print(bandsIds)
 
 
-            else:
-                return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Il manque des fichier .Tif") 
+                    # get download urls for each band
+                        urls = getDownloadUrl(bandsIds=bandsIds,BAND_LIST=BANDS_LIST,API_KEY=API_KEY)
+                    #print(urls)
+           
+                    #check if there is dir with user id if not lets  create one
+                        userUsed = current_user
+                        TEMP_ID = str(userUsed.get_id())
+                        PARENT_SAVE_FOLDER_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
+                        SAVE_FOLDER_PATH = os.path.join(PARENT_SAVE_FOLDER_PATH,sId["date"])
+                        try:
+                            #print("making dir ")
+                            if os.path.isdir(SAVE_FOLDER_PATH) == False:
+                                os.mkdir(SAVE_FOLDER_PATH)
+                        except:
+                            logoutFromApi()
+                            return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Erreu lors creation votre reportoire,essayer plus tards!")
+
+                    # lets start the download and saving the .tif(s)
+                        try:
+                            for b in BANDS_LIST:
+                                FULL_PATH = str(SAVE_FOLDER_PATH) + "/" + str(b) + ".tif"
+                                print(urls[b])
+                                #wget.download(urls[b], FULL_PATH)  
+                            print("================end=================")                          
+                        
+                            # let calculate the land surface temperature
+                            try:
+                                userUsed = current_user
+                                TEMP_ID = str(userUsed.get_id())
+
+                                folderName = sId["date"]
+                                isCalculated = True
+
+                                isCalculated = __applyLST__(SAVE_FOLDER_PATH,TEMP_ID,folderName)
+
+                                if isCalculated == False:
+                                    logoutFromApi()
+                                    return render_template("heat.html",user = current_user,aErrorMsg = "Erreur il manque des fichier.tif!")
+
+                            except:
+                                logoutFromApi()
+                                return render_template("heat.html",user = current_user,aErrorMsg = "Erreur lors calculer LST !essayer plus tard!")               
+                        except:
+                            logoutFromApi()
+                            return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Erreur lors le téléchargement les Scenes du profile!essayer plus tard!")
+                except:
+                    logoutFromApi()
+                    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Aucune Lien de téléchargement a été trouvé!")  
+        
+        
+
         else :
             return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Des champs sont vides")
-
-       
-        #this section reserved for profile
-        #download and calculate lst
-        #
-        #
-        #
-
-
-    return render_template("heat.html",user = current_user)
+        
+    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="")
 
 
 
@@ -378,52 +516,6 @@ def upload():
 
     return render_template("heat.html",user = current_user)
 
-######## this function will handel the following ###
-
-# searching for scenes
-# return list that contain download link
-
-# inputs scenes Params
-
-def searchScenesLevel1(apiLogin,lat,lon,startDate,endDate,API_KEY,allScenes):
-
-    scenes = searchForScene(apiLogin=apiLogin,
-                                        lat=lat,
-                                        long=lon,
-                                        startData=startDate,
-                                        endDate=endDate)
-    try :
-        #get level 1 scenes
-        sceneId,productId = getScenesWithL1(scenes=scenes)
-                
-        #the search may give us many scenes with l1 we can use just one of them
-        # get the bands download ids
-        downloadOptions = []
-        downloadUrlLists = []
-        if allScenes == False :
-            downloadOptions.append(getDownloadOption(entity_id=sceneId[0],API_KEY=API_KEY))
-        # get all the result
-        elif allScenes == True:
-            for id in sceneId:
-                downloadOptions.append(getDownloadOption(entity_id=sceneId[id],API_KEY=API_KEY))
-        for op in downloadOptions:
-            bandsDownloadId = getIDsForDownloadUrlForBand(bandsList=BANDS_LIST,downloadOptions=op)
-
-            # bandsDownloadId is dict ie {bandNum:{entityId,productId}}
-            downloadUrls = {}
-
-            for band in BANDS_LIST:
-                b = {"entityId":bandsDownloadId[band]["entityId"],
-                        "productId":bandsDownloadId[band]["productId"]}
-                            
-                downloadUrls[band] = getDownloadUrl(bandsIds=b,API_KEY=API_KEY)
-            downloadUrlLists.append(downloadUrls)
-        return downloadUrlLists
-    except:
-        return None
-
-####### end searching function #########################
-
 
 ######## this function will handel LST Traitment ########
 
@@ -446,5 +538,148 @@ def calcLST_SC(bands):
     return LST_signleChannel_B10,LST_signleChannel_B11
 
 
+def __applyLST__(BANDS_PATH,serveFolderId,serverFolderDate):
 
+    bands,isFull = getBands(BANDS_PATH,BANDS_LIST)
+
+    # #if all required bands are selected 4 5 10 11 continue
+
+    if isFull == True :
+        # Calculate LST 
+        try :
+            LST_B10,LST_B11 = calcLST_SC(bands)
+
+            SAVE_PATH_B10 = os.path.join(BANDS_PATH,"pre_result_10.tif")
+            SAVE_PATH_B11 = os.path.join(BANDS_PATH,"pre_result_11.tif")
+
+            # pre save the tifs
+
+            saveLSTInTif(imagery=bands[10],lst=LST_B10,path=SAVE_PATH_B10)
+            saveLSTInTif(imagery=bands[10],lst=LST_B11,path=SAVE_PATH_B11)
+
+            # convert the result to EPSG:4326
+
+            RESULT_BATH = "C:\Apache24\htdocs"
+            SAVE_FOLDER_PATH1 = os.path.join(RESULT_BATH, serveFolderId)
+            SAVE_FOLDER_PATH2 = os.path.join(SAVE_FOLDER_PATH1, serverFolderDate)
+            try:
+                if os.path.isdir(SAVE_FOLDER_PATH1) == False:
+                        os.mkdir(SAVE_FOLDER_PATH1)
+
+                if os.path.isdir(SAVE_FOLDER_PATH2) == False:
+                        os.mkdir(SAVE_FOLDER_PATH2)
+            except:
+                return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Erreur lors Créer la résultat! Essayer plus tards")
+                    
+            OUTPUT_PATH_B10 = os.path.join(SAVE_FOLDER_PATH2,"r_10.tif")
+            OUTPUT_PATH_B11 = os.path.join(SAVE_FOLDER_PATH2,"r_11.tif")
+
+            changeProjection(lstPath=SAVE_PATH_B10,outputPath=OUTPUT_PATH_B10)
+            changeProjection(lstPath=SAVE_PATH_B11,outputPath=OUTPUT_PATH_B11)
+
+
+            ### delete the temp folder
+
+        except:
+            return False
+
+    else:
+        return False 
+        
+
+
+######################################################################
+# 
+# 
+# Visualisation section
+# 
+####################################################################### 
+@view.route("/board")
+@login_required
+def goBoard():
+
+    # static plot
+    # timeStamp plot
+
+    data = [
+        ("01-01-2020",1965),
+        ("02-01-2020",655),
+        ("03-01-2020",1973),
+        ("04-01-2020",1929),
+        ("05-01-2020",2000),
+        ("06-01-2020",1991),
+        ("07-01-2020",298),
+    ]
+
+    labels = [row[0] for row in data]
+    values = [row[1] for row in data]
+    #print(labels)
+
+
+    return render_template("dashboard.html",user = current_user,labels=[],band10Data=[],band11Data=[])
+
+@view.route("/profile",methods=['GET','POST'])
+def processProfile():
+    #get the dir name of profile save it as a list for label
+    #get from each dir result lst and read as array
+    #get the value at position send from js
+    #save the values in a list
+    if request.method == 'POST':
+        # api approche
+        #print("simple approche")
+        # first we need to get the location name,desired date and study profile
+        data = request.form
+        #print(request.form)
+        #first lets get the lan and lng
+
+        lat = data.getlist('lat')
+        lng = data.getlist('lon')
+        lat = lat[0]
+        lng = lng[0]
+        
+        print(lat)
+        print(lng)
+
+        #let prepare the variable that we need
+
+        labels = [] # this will x axis represent date
+        band10Data = [] # these data for y axis reprent temp
+
+
+        #let get all the bands in server dir
+
+        user = current_user
+        ID = str(user.get_id())
+        SERVER_PATH = "C:\Apache24\htdocs"
+        SERVER_PATH = os.path.join(SERVER_PATH,ID)
+
+        for root, dirs, files in os.walk(SERVER_PATH):
+            for d in dirs:
+                labels.append(d)
+                print(d)
+
+
+                #get the tif file for band 10,11
+                band10_tif = os.path.join(root, d,"r_10.tif")
+                band11_tif = os.path.join(root, d,"r_10.tif")
+                #print(band10_tif)
+
+                band10Value = getPixelValue(band10_tif,lat,lng)
+                #band11Value = getPixelValue(band11_tif,lat,lng)
+                band10Data.append(band10Value)
+                #band11Data.append(band11Value)
+                #print(band10Value)
+
+                   
+
+
+        # print(labels)
+        # print(band10Data)
+        # print(band11Data)
+
+        responseObj = {"labels":labels,
+                       "band10":band10Data}
+
+
+        return jsonify(responseObj)
 
