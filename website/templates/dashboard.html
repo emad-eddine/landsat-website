@@ -19,15 +19,67 @@
 <!-- chart js for visualisation    -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.3.2/chart.min.js" crossorigin="anonymous"
     referrerpolicy="no-referrer"></script>
-<script src="{{ url_for('static', filename='script/jquery-3.6.4.js') }}"></script>
+
 <section class="board-section">
     <div class="map-container">
-
-        <div id="map">
-        </div>
+        <div id="map"></div>
     </div>
     <div class="graph-container">
-        <canvas id="countries" width="600" height="400"></canvas>
+        <fieldset>
+            <legend>Le Profile</legend>
+            <canvas id="lstTemp"></canvas>
+        </fieldset>
+        <fieldset>
+            <legend>Nouveau Profile</legend>
+            <form action="newProfileForm" method="post" class="newProfileForm" id="newProfile" name="newProfile-form"
+                    enctype="multipart/form-data">
+                    <div class="form-group">
+                    <div class="form-row">
+                        <div class="form-group form-inline from-form">
+                            <label for="newProfileDateFrom" >De</label>
+                            <input type="month" min="2008-01" id="newProfileDateFrom" class="text form-control" type="date"
+                                name="newProfileDateFrom">    
+                        </div>                        
+                        <div class="form-group form-inline to-form">
+                            <label for="newProfileDateTo" >A</label>
+                            <input type="month" min="2008-01" id="newProfileDateTo" class="text form-control" type="date"
+                                name="newProfileDateTo">
+                        </div>
+                        <div class="form-group">
+                            <input id="newProfileBtn" type="submit" value="Valider"/>
+                            
+                        </div>
+                        
+                    </div>
+                    <div class="progress">
+                        <div id="newProfileProgressBar" class="progress-bar bg-success" role="progressbar"
+                            style="width: 1%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small id="newProfileMsg">Cela peut prendre quelque minutes...</small>
+            </form>
+        </fieldset>
+        <!-- <fieldset>
+            <legend>Section de téléchargement</legend>
+        <div class="container">
+            <div class="row">
+              <div class="col">
+                Télécharger la carte de temperature
+              </div>
+              <div class="col">
+                <button id="downloadBtn1" type="submit">Télécharger</button>
+              </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                Télécharger la Chart de profile
+                </div>
+                <div class="col">
+                  <button id="downloadBtn1" type="submit">Télécharger</button>
+                </div>
+              </div>
+        </div>
+    </fieldset>
+     -->
     </div>
 </section>
 
@@ -36,61 +88,41 @@
 <script>
 
     // this section for charts
-    var ctx = document.getElementById("countries").getContext("2d");
+    var ctx = document.getElementById("lstTemp").getContext("2d");
 
 
-    var lineChart = new Chart(ctx, {
-        type: "line",
-        data: {
-            labels:['2022-08', '2023-01', '2023-04']  ,
-    datasets: [
+    var lineChart = new Chart(ctx,
         {
-            label: "Band 10",
-            data: [44.13858679701646, 22.23611662514449, 31.2804812772958],
-            fill : false,
-            borderColor : "rgb(76,123,96)",
-            lineTension: 0.7
-        }
+            type: "line",
+            data:
+            {
+                labels: [],
+                datasets:
+                    [
+                        {
+                            label: "Temperature de la surface",
+                            data: [],
+                            fill: false,
+                            borderColor: "rgb(219, 133, 52)",
+                            lineTension: 0.5
+                        }
 
-    ]
-    
-        },
-    options:
-    {
-        responsive: false
-    }
-    });
-    /*
-    
-    var lineChart = new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: {{ labels | safe }},
-    datasets: [
-        {
-            label: "Band 10",
-            data: {{ band10Data| safe }},
-            fill : false,
-            borderColor : "rgb(76,123,96)",
-            lineTension: 0.7
-        },
-        {
-            label: "Band 11",
-            data: {{ band11Data| safe }},
-            fill : false,
-            borderColor : "rgb(231,55,96)",
-            lineTension: 0.7 
-        }
-    ]
-    
-        },
-    options:
-    {
-        responsive: false
-    }
-    });
+                    ]
 
-*/
+            },
+            options:
+            {
+                responsive: false,
+                scales: {
+                    y: {
+                        ticks: { color: '#fff', beginAtZero: true }
+                    },
+                    x: {
+                        ticks: { color: '#fff', beginAtZero: true }
+                    }
+                }
+            }
+        });
 
 
     // this section for charts
@@ -153,16 +185,15 @@
             type: 'POST',// http method
             url: "profile",
             data: sendingData,// data to submit
-            success: function(responseObj) 
-            {
+            success: function (responseObj) {
                 console.log(responseObj)
-                updateDoughnutChart(responseObj["labels"],responseObj["band10"])
-            }  
+                updateDoughnutChart(responseObj["labels"], responseObj["band10"])
+            }
         });
     }
 
-    function updateDoughnutChart(labels,band10Data){
-        
+    function updateDoughnutChart(labels, band10Data) {
+
         lineChart.data.labels = labels;
         lineChart.data.datasets[0].data = band10Data;
 
@@ -170,8 +201,8 @@
         //console.log(band10Data)
 
         lineChart.update();
-      }
-      
+    }
+
 
 
 </script>

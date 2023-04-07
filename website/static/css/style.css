@@ -843,6 +843,7 @@ transform: scaleX(1);
 {
   color: #a80000;
   font-weight: bold;
+ 
 }
 
 
@@ -1169,5 +1170,43 @@ button.ready:after {
   height: 100%;
 }
 
+#lstTemp{
+  width: 100vh;
+  height: 30vh;
+}
+.graph-container legend
+{
+  color: #fff;
+}
+
+.newProfileForm
+{
+  overflow: hidden;
+  margin-top: 0;
+}
+.newProfileForm *
+{
+  color: #fff;
+  margin: 1px 5px 1px 5px ;
+}
+
+#newProfileBtn
+{
+  border-radius: 20px;
+}
+
+#newProfileMsg,.progress
+{
+  display: none;
+}
+
+.row
+{
+  margin: 10px;
+}
+.col
+{
+  color: #fff;
+}
 
 
