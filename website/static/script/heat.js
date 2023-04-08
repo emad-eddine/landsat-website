@@ -240,49 +240,54 @@ Dropzone.options.dropper = {
 // handling progress bar 
 
 
-var timeout;
+// var timeout;
 
-async function getStatus() {
+// async function getStatus() {
 
-  let get;
-  let progressCounter
+//   let get;
+//   let progressCounter
 
-  try {
-    const res = await fetch("/status");
-    get = await res.json();
-  } catch (e) {
-    console.error("Error: ", e);
-  }
+//   try {
+//     const res = await fetch("/status");
+//     get = await res.json();
+//   } catch (e) {
+//     console.error("Error: ", e);
+//   }
 
-  console.log(get["msg"])
-  console.log(get["error"])
-  console.log(get["pro"])
-  console.log(get["proMsg"])
-
-
-  //prohress bar
-  progressCounter = get["pro"] * 10
+//   console.log(get["msg"])
+//   console.log(get["error"])
+//   console.log(get["pro"])
+//   console.log(get["proMsg"])
 
 
-  document.getElementById("myBar").style.width = progressCounter + '%';
-  // progress msg
-  smsgSpan.innerHTML = get["proMsg"]
+//   //prohress bar
+//   progressCounter = get["pro"] * 10
 
-  //error msg
 
-  let errorMsg = document.getElementById("errorMsg")
+//   document.getElementById("myBar").style.width = progressCounter + '%';
+//   // progress msg
+//   smsgSpan.innerHTML = get["proMsg"]
 
-  if (get["error"] == true || get["pro"] == 10) {
-    console.log("done")
-    errorMsg.innerHTML = get["msg"]
-    document.getElementById("myBar").style.width = 0 + '%';
-    smsgSpan.innerHTML = ""
-    clearTimeout(timeout);
-    return false;
-  }
+//   //error msg
 
-  timeout = setTimeout(getStatus, 1000);
-}
+//   let errorMsg = document.getElementById("errorMsg")
+
+//   if(get["pro"] == 10)
+//   {
+//     window.location.replace("url_for(view.goBord())");
+//   }
+
+//   if (get["error"] == true || get["pro"] == 10) {
+//     console.log("done")
+//     errorMsg.innerHTML = get["msg"]
+//     document.getElementById("myBar").style.width = 0 + '%';
+//     smsgSpan.innerHTML = ""
+//     clearTimeout(timeout);
+//     return false;
+//   }
+
+//   timeout = setTimeout(getStatus, 1000);
+// }
 
 
 ///////////////////////////////////////////////////////
@@ -290,47 +295,47 @@ async function getStatus() {
 
 
 
-async function getStatusAdvanced() {
+// async function getStatusAdvanced() {
 
-  let get;
-  let progressCounter
+//   let get;
+//   let progressCounter
 
-  try {
-    const res = await fetch("/statusAdv");
-    get = await res.json();
-  } catch (e) {
-    console.error("Error: ", e);
-  }
+//   try {
+//     const res = await fetch("/statusAdv");
+//     get = await res.json();
+//   } catch (e) {
+//     console.error("Error: ", e);
+//   }
 
-  console.log(get["msg"])
-  console.log(get["error"])
-  console.log(get["pro"])
-  console.log(get["proMsg"])
-
-
-  //prohress bar
-  progressCounter = get["pro"] * 10
+//   console.log(get["msg"])
+//   console.log(get["error"])
+//   console.log(get["pro"])
+//   console.log(get["proMsg"])
 
 
-  document.getElementById("myBar2").style.width = progressCounter + '%';
-  // progress msg
-  msgSpan.innerHTML = get["proMsg"]
+//   //prohress bar
+//   progressCounter = get["pro"] * 10
 
-  //error msg
 
-  let errorMsg = document.getElementById("errorMsg")
+//   document.getElementById("myBar2").style.width = progressCounter + '%';
+//   // progress msg
+//   msgSpan.innerHTML = get["proMsg"]
 
-  if (get["error"] == true || get["pro"] == 10) {
-    console.log("done")
-    document.getElementById("advancedFormeErreur").innerHTML = get["error"]
-    document.getElementById("myBar2").style.width = 0 + '%';
-    msgSpan.innerHTML = ""
-    clearTimeout(timeout);
-    return false;
-  }
+//   //error msg
 
-  timeout = setTimeout(getStatus, 1000);
-}
+//   let errorMsg = document.getElementById("errorMsg")
+
+//   if (get["error"] == true || get["pro"] == 10) {
+//     console.log("done")
+//     document.getElementById("advancedFormeErreur").innerHTML = get["error"]
+//     document.getElementById("myBar2").style.width = 0 + '%';
+//     msgSpan.innerHTML = ""
+//     clearTimeout(timeout);
+//     return false;
+//   }
+
+//   timeout = setTimeout(getStatus, 1000);
+// }
 
 
 

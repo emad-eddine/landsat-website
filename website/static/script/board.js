@@ -46,4 +46,10 @@
 // function that send post request to server using ajax 
 // send the position
 
+// download the files
+
+
+
+
+
 

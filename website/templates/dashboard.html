@@ -29,57 +29,31 @@
             <legend>Le Profile</legend>
             <canvas id="lstTemp"></canvas>
         </fieldset>
+
         <fieldset>
-            <legend>Nouveau Profile</legend>
-            <form action="newProfileForm" method="post" class="newProfileForm" id="newProfile" name="newProfile-form"
-                    enctype="multipart/form-data">
-                    <div class="form-group">
-                    <div class="form-row">
-                        <div class="form-group form-inline from-form">
-                            <label for="newProfileDateFrom" >De</label>
-                            <input type="month" min="2008-01" id="newProfileDateFrom" class="text form-control" type="date"
-                                name="newProfileDateFrom">    
-                        </div>                        
-                        <div class="form-group form-inline to-form">
-                            <label for="newProfileDateTo" >A</label>
-                            <input type="month" min="2008-01" id="newProfileDateTo" class="text form-control" type="date"
-                                name="newProfileDateTo">
-                        </div>
-                        <div class="form-group">
-                            <input id="newProfileBtn" type="submit" value="Valider"/>
-                            
-                        </div>
-                        
+            <legend>Résultats</legend>
+            <div class="container">
+                <div class="row">
+                    <div class="col">
+                        Télécharger la carte de temperature
                     </div>
-                    <div class="progress">
-                        <div id="newProfileProgressBar" class="progress-bar bg-success" role="progressbar"
-                            style="width: 1%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="col">
+                        <a href="{{LST_TIF_LINK}}" target="_blank">Télécharger</a>
+                        <!-- <button id="downloadBtn1" type="submit">Télécharger</button> -->
                     </div>
-                    <small id="newProfileMsg">Cela peut prendre quelque minutes...</small>
-            </form>
-        </fieldset>
-        <!-- <fieldset>
-            <legend>Section de téléchargement</legend>
-        <div class="container">
-            <div class="row">
-              <div class="col">
-                Télécharger la carte de temperature
-              </div>
-              <div class="col">
-                <button id="downloadBtn1" type="submit">Télécharger</button>
-              </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        Télécharger le Graphe de profile
+                    </div>
+                    <div class="col">
+                        <a id="downloadBtn2" href="" target="_blank" onclick="downloadChart()" >Télécharger</a>
+                        <!-- <button  type="submit">Télécharger</button> -->
+                    </div>
+                </div>
             </div>
-            <div class="row">
-                <div class="col">
-                Télécharger la Chart de profile
-                </div>
-                <div class="col">
-                  <button id="downloadBtn1" type="submit">Télécharger</button>
-                </div>
-              </div>
-        </div>
-    </fieldset>
-     -->
+        </fieldset>
+
     </div>
 </section>
 
@@ -115,10 +89,10 @@
                 responsive: false,
                 scales: {
                     y: {
-                        ticks: { color: '#fff', beginAtZero: true }
+                        ticks: { color: '#04AA6D', beginAtZero: true }
                     },
                     x: {
-                        ticks: { color: '#fff', beginAtZero: true }
+                        ticks: { color: '#04AA6D', beginAtZero: true }
                     }
                 }
             }
@@ -127,7 +101,7 @@
 
     // this section for charts
     // // GeoTIFF
-    var tiff = "http://localhost:8080/2/2022-08/clip_11.tif";
+    var tiff = "{{LST_TIF_LINK}}";
 
     var map = L.map('map');
 
@@ -202,6 +176,20 @@
 
         lineChart.update();
     }
+
+
+    // download section
+
+
+    function downloadChart()
+    {   
+        var chartDBtn = document.getElementById("downloadBtn2")
+        var canvas = document.getElementById("lstTemp");
+        chartDBtn.download = 'result-chart.png';
+        chartDBtn.href = canvas.toDataURL("image/png",1);
+        chartDBtn.click();
+    }
+
 
 
 

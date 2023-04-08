@@ -24,7 +24,7 @@
                 <form action="simpleForm" method="post" class="simpleForm" id="Hform" name="heat-form"
                     enctype="multipart/form-data">
 
-                    <span id="errorMsg"class="simpleFormeErreur"></span>
+                    <span id="errorMsg" class="simpleFormeErreur"></span>
                     <fieldset>
                         <legend>Location De La Zone D'étude</legend>
                         <div class="form-group">
@@ -41,20 +41,20 @@
                         </div>
                         <div class="form-group">
                             <label for="simpleDate">Intervalle du profile d'étude</label>
-                        <div class="form-row">
+                            <div class="form-row">
 
-                            <div class="form-group form-inline from-form">
-                                <label for="simpleDateFrom" >De</label>
-                                <input type="month" min="2008-01" id="simpleDateFrom" class="text form-control" type="date"
-                                    name="simpleStudyDateFrom">    
-                            </div>                        
-                            <div class="form-group form-inline to-form">
-                                <label for="simpleDateTo" >A</label>
-                                <input type="month" min="2008-01" id="simpleDateTo" class="text form-control" type="date"
-                                    name="simpleStudyDateTo">
+                                <div class="form-group form-inline from-form">
+                                    <label for="simpleDateFrom">De</label>
+                                    <input type="month" min="2008-01" id="simpleDateFrom" class="text form-control"
+                                        type="date" name="simpleStudyDateFrom">
+                                </div>
+                                <div class="form-group form-inline to-form">
+                                    <label for="simpleDateTo">A</label>
+                                    <input type="month" min="2008-01" id="simpleDateTo" class="text form-control"
+                                        type="date" name="simpleStudyDateTo">
+                                </div>
                             </div>
                         </div>
-                    </div>
                     </fieldset>
                     <div class="form-group">
                         <button id="simpleSubmitBtn" type="submit">Valider</button>
@@ -64,8 +64,8 @@
                         </div> -->
                         <div id="myProgress">
                             <div id="myBar"></div>
-                          </div>
-                          
+                        </div>
+
                         <small id="smsgSpan">Cela peut prendre quelque minutes...</small>
                     </div>
                 </form>
@@ -88,14 +88,6 @@
 
                             <input id="AlocationInput" class="text form-control" type="text" name="Alocation"
                                 placeholder="Zone d'étude" required>
-                            <div class="input-group mb-3 shape-file-input">
-                                <div class="custom-file">
-                                    <input type="file" class="custom-file-input" id="chooseShapeFile" accept=".shp">
-                                    <label class="custom-file-label" for="chooseShapeFile">(Optionnel) choisir un
-                                        fichier
-                                        Shape</label>
-                                </div>
-                            </div>
 
                         </div>
                     </fieldset>
@@ -116,19 +108,19 @@
                         </div>
                         <div class="form-group">
                             <label for="simpleDate">Intervalle du profile d'étude</label>
-                        <div class="form-row">
-                            <div class="form-group form-inline from-form">
-                                <label for="advancedDateFrom" >De</label>
-                                <input type="month" min="2008-01" id="advancedDateFrom" class="text form-control" type="date"
-                                    name="advancedStudyDateFrom">    
-                            </div>                        
-                            <div class="form-group form-inline to-form">
-                                <label for="advancedDateTo" >A</label>
-                                <input type="month" min="2008-01" id="advancedDateTo" class="text form-control" type="date"
-                                    name="advancedStudyDateTo">
+                            <div class="form-row">
+                                <div class="form-group form-inline from-form">
+                                    <label for="advancedDateFrom">De</label>
+                                    <input type="month" min="2008-01" id="advancedDateFrom" class="text form-control"
+                                        type="date" name="advancedStudyDateFrom">
+                                </div>
+                                <div class="form-group form-inline to-form">
+                                    <label for="advancedDateTo">A</label>
+                                    <input type="month" min="2008-01" id="advancedDateTo" class="text form-control"
+                                        type="date" name="advancedStudyDateTo">
+                                </div>
                             </div>
                         </div>
-                    </div>
                     </fieldset>
                     <div class="form-group">
                         <button id="abtn" type="submit">Valider</button>
@@ -138,10 +130,10 @@
                         </div> -->
                         <div id="myProgress2">
                             <div id="myBar2"></div>
-                          </div>
-                          
-                    
-                    
+                        </div>
+
+
+
                     </div>
                     <small id="msgSpan">Cela peut prendre quelque minutes...</small>
                 </form>
@@ -361,8 +353,8 @@
 <script src="{{ url_for('static', filename='script/form.js') }}"></script>
 <script src="{{ url_for('static', filename='script/heat.js') }}"></script>
 <script>
-    
-  
+
+
 
     /////////////////////////////////////////////
     simpleBtn = document.getElementById("simpleSubmitBtn")
@@ -374,23 +366,122 @@
     msgSpan = document.getElementById("msgSpan")
     progressDiv2 = document.getElementById("myProgress2")
 
-    
- 
-        {% if check %}
-        simpleBtn.classList.add('loading');
-        progressDiv.style.display = "block";
-        smsgSpan.style.display = "block";
-        getStatus();
-        {% endif %}
 
-        {% if adv %}
-        advancedBtn.classList.add('loading');
-        progressDiv2.style.display = "block";
-        msgSpan.style.display = "block";
-        getStatusAdvanced();
-        {% endif %}
-      
-    
-    
+
+    {% if check %}
+    simpleBtn.classList.add('loading');
+    progressDiv.style.display = "block";
+    smsgSpan.style.display = "block";
+    getStatus();
+    {% endif %}
+
+    {% if adv %}
+    advancedBtn.classList.add('loading');
+    progressDiv2.style.display = "block";
+    msgSpan.style.display = "block";
+    getStatusAdvanced();
+    {% endif %}
+
+    var timeout;
+
+    async function getStatus() {
+
+        let get;
+        let progressCounter
+
+        try {
+            const res = await fetch("/status");
+            get = await res.json();
+        } catch (e) {
+            console.error("Error: ", e);
+        }
+
+        console.log(get["msg"])
+        console.log(get["error"])
+        console.log(get["pro"])
+        console.log(get["proMsg"])
+
+
+        //prohress bar
+        progressCounter = get["pro"] * 10
+
+
+        document.getElementById("myBar").style.width = progressCounter + '%';
+        // progress msg
+        smsgSpan.innerHTML = get["proMsg"]
+
+        //error msg
+
+        let errorMsg = document.getElementById("errorMsg")
+
+        if (get["pro"] == 10) {
+            window.location.replace("{{ url_for('view.goBoard')}}");
+        }
+
+        if (get["error"] == true) {
+            console.log("done")
+            errorMsg.innerHTML = get["msg"]
+            document.getElementById("myBar").style.width = 0 + '%';
+            smsgSpan.innerHTML = ""
+            clearTimeout(timeout);
+            return false;
+        }
+
+        timeout = setTimeout(getStatus, 1000);
+    }
+
+
+
+    //////////////////////////////////:
+
+    async function getStatusAdvanced() {
+
+        let get;
+        let progressCounter
+
+        try {
+            const res = await fetch("/statusAdv");
+            get = await res.json();
+        } catch (e) {
+            console.error("Error: ", e);
+        }
+
+        console.log(get["msg"])
+        console.log(get["error"])
+        console.log(get["pro"])
+        console.log(get["proMsg"])
+
+
+        //prohress bar
+        progressCounter = get["pro"] * 10
+
+
+        document.getElementById("myBar2").style.width = progressCounter + '%';
+        // progress msg
+        msgSpan.innerHTML = get["proMsg"]
+
+        if (get["pro"] == 10) {
+            window.location.replace("{{ url_for('view.goBoard')}}");
+        }
+
+        //error msg
+
+        let errorMsg = document.getElementById("errorMsg")
+
+        if (get["error"] == true ) {
+            console.log("done")
+            document.getElementById("advancedFormeErreur").innerHTML = get["error"]
+            document.getElementById("myBar2").style.width = 0 + '%';
+            msgSpan.innerHTML = ""
+            clearTimeout(timeout);
+            return false;
+        }
+
+        timeout = setTimeout(getStatus, 1000);
+    }
+
+
+
+
 </script>
 {% endblock %}

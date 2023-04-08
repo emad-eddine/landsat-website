@@ -187,7 +187,7 @@ def simpleFormTask(simpleLocationName,simpleStudyDate,simpleStudyDateFrom,simple
             progressCounter = 5
 
             BANDS_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
-            isCalculated = __applyLST__(BANDS_PATH,TEMP_ID,"")
+            isCalculated = __applyLST__(BANDS_PATH,TEMP_ID,"",simpleLocationName)
 
             if isCalculated == False:
                 logoutFromApi()
@@ -295,7 +295,7 @@ def simpleFormTask(simpleLocationName,simpleStudyDate,simpleStudyDateFrom,simple
                             folderName = sId["date"]
                             isCalculated = True
 
-                            isCalculated = __applyLST__(SAVE_FOLDER_PATH,TEMP_ID,folderName)
+                            isCalculated = __applyLST__(SAVE_FOLDER_PATH,TEMP_ID,folderName,simpleLocationName)
 
                             if isCalculated == False:
                                 logoutFromApi()
@@ -387,14 +387,13 @@ def advancedFormTask(advancedLocationName,advancedStudyDate,advancedStudyProfile
                 if isNumber == False:
                     isError = True
                     message = "Les fichier exporter ont mauvaise notation"
-                    return None
 
             # at this point we got all required bands let calculate LST
 
             # #if all required bands are selected 4 5 10 11 continue
         progressMsg = "Calculer la temperature du surface...."
         progressCounter = 4
-        __applyLST__(BANDS_PATH,TEMP_ID,"")
+        __applyLST__(BANDS_PATH,TEMP_ID,"",advancedLocationName)
 
             #============end of lst calculation############            
             ###############################################
@@ -516,7 +515,7 @@ def advancedFormTask(advancedLocationName,advancedStudyDate,advancedStudyProfile
                                 folderName = sId["date"]
                                 isCalculated = True
                                 progressMsg = "Calculer la temperature du surface...."
-                                isCalculated = __applyLST__(SAVE_FOLDER_PATH,TEMP_ID,folderName)
+                                isCalculated = __applyLST__(SAVE_FOLDER_PATH,TEMP_ID,folderName,advancedLocationName)
                                 progressCounter = 8
                                 if isCalculated == False:
                                     logoutFromApi()
@@ -637,6 +636,9 @@ def calcLST_SC(bands):
     BAND_10 = bands[10]
     BAND_11 = bands[11]
 
+    # crop the bands before calculation
+    # crop according to shapefile
+
     TOA_10,TOA_11 = calculatesTOA(BAND_10,BAND_11)
     BT_10,BT_11 = calculateBT(TOA_10,TOA_11)
     NDVI = calculateNDVI(BAND_4,BAND_5)
@@ -648,7 +650,7 @@ def calcLST_SC(bands):
     return LST_signleChannel_B10,LST_signleChannel_B11
 
 
-def __applyLST__(BANDS_PATH,serveFolderId,serverFolderDate):
+def __applyLST__(BANDS_PATH,serveFolderId,serverFolderDate,locationName):
 
     bands,isFull = getBands(BANDS_PATH,BANDS_LIST)
 
@@ -667,25 +669,44 @@ def __applyLST__(BANDS_PATH,serveFolderId,serverFolderDate):
             saveLSTInTif(imagery=bands[10],lst=LST_B10,path=SAVE_PATH_B10)
             saveLSTInTif(imagery=bands[10],lst=LST_B11,path=SAVE_PATH_B11)
 
-            # convert the result to EPSG:4326
+            isShapeCreated,shapePath = getWilayaShapeFile(locationName=locationName,outputFolder=BANDS_PATH)
 
-            RESULT_BATH = "C:\Apache24\htdocs"
-            SAVE_FOLDER_PATH1 = os.path.join(RESULT_BATH, serveFolderId)
-            SAVE_FOLDER_PATH2 = os.path.join(SAVE_FOLDER_PATH1, serverFolderDate)
-            try:
-                if os.path.isdir(SAVE_FOLDER_PATH1) == False:
-                        os.mkdir(SAVE_FOLDER_PATH1)
+            if isShapeCreated == True:
+                # if shapefile is created crop the bands
+                projectShapePath = os.path.join(BANDS_PATH,"pro.shp")
 
-                if os.path.isdir(SAVE_FOLDER_PATH2) == False:
-                        os.mkdir(SAVE_FOLDER_PATH2)
-            except:
-                return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Erreur lors Créer la résultat! Essayer plus tards")
+                isProjectedCreated = createShapeFileProjection(shapeFilePath=shapePath,
+                                                       projectShapePath=projectShapePath,
+                                                       bandPath=SAVE_PATH_B10)
+
+
+                if isProjectedCreated == True:
+
+                    savingPath = os.path.join(BANDS_PATH,"clip_10.tif")
+
+                    croped = cropRaster(projectShapePath=projectShapePath,
+                                    bandPath=SAVE_PATH_B10,bandOutputBand=savingPath)
+                    print(croped) 
+                    if croped == True:
+
+                        # convert the result to EPSG:4326
+                        RESULT_BATH = "C:\Apache24\htdocs"
+                        SAVE_FOLDER_PATH1 = os.path.join(RESULT_BATH, serveFolderId)
+                        SAVE_FOLDER_PATH2 = os.path.join(SAVE_FOLDER_PATH1, serverFolderDate)
+                        try:
+                            if os.path.isdir(SAVE_FOLDER_PATH1) == False:
+                                os.mkdir(SAVE_FOLDER_PATH1)
+
+                            if os.path.isdir(SAVE_FOLDER_PATH2) == False:
+                                os.mkdir(SAVE_FOLDER_PATH2)
+                        except:
+                            return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Erreur lors Créer la résultat! Essayer plus tards")
                     
-            OUTPUT_PATH_B10 = os.path.join(SAVE_FOLDER_PATH2,"r_10.tif")
-            OUTPUT_PATH_B11 = os.path.join(SAVE_FOLDER_PATH2,"r_11.tif")
+                        OUTPUT_PATH_B10 = os.path.join(SAVE_FOLDER_PATH2,"r_10.tif")
+                        OUTPUT_PATH_B11 = os.path.join(SAVE_FOLDER_PATH2,"r_11.tif")
 
-            changeProjection(lstPath=SAVE_PATH_B10,outputPath=OUTPUT_PATH_B10)
-            changeProjection(lstPath=SAVE_PATH_B11,outputPath=OUTPUT_PATH_B11)
+                        changeProjection(lstPath=savingPath,outputPath=OUTPUT_PATH_B10)
+                        changeProjection(lstPath=SAVE_PATH_B11,outputPath=OUTPUT_PATH_B11)
 
 
             ### delete the temp folder
@@ -708,25 +729,12 @@ def __applyLST__(BANDS_PATH,serveFolderId,serverFolderDate):
 @login_required
 def goBoard():
 
-    # static plot
-    # timeStamp plot
 
-    data = [
-        ("01-01-2020",1965),
-        ("02-01-2020",655),
-        ("03-01-2020",1973),
-        ("04-01-2020",1929),
-        ("05-01-2020",2000),
-        ("06-01-2020",1991),
-        ("07-01-2020",298),
-    ]
-
-    labels = [row[0] for row in data]
-    values = [row[1] for row in data]
-    #print(labels)
-
-
-    return render_template("dashboard.html",user = current_user,labels=[],band10Data=[],band11Data=[])
+    user = current_user
+    TEMP_ID = str(user.get_id())
+    LST_TIF_LINK = "http://localhost:8080/" + TEMP_ID + "/r_10.tif"
+    print(LST_TIF_LINK)
+    return render_template("dashboard.html",user = current_user,LST_TIF_LINK=LST_TIF_LINK)
 
 @view.route("/profile",methods=['GET','POST'])
 def processProfile():

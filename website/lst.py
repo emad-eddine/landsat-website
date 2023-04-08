@@ -10,6 +10,11 @@ import numpy as np
 import math
 from osgeo import gdal
 from rasterio.windows import Window
+import geopandas as gpd
+import pandas as pd
+import fiona
+import rasterio.mask
+from .utils import SHAPEFILE_PATH
 
 ############## LST SECTION ##############################
 
@@ -309,4 +314,86 @@ def getPixelValue(BandFile,lat,lng):
 
     return value
 
+
+##########################################################"
+# this function will get the shapefile of selected wilaya
+
+def getWilayaShapeFile(locationName,outputFolder):
+    
+    try:
+        # get the shapeFile
+        df = gpd.read_file(SHAPEFILE_PATH)
+
+        index = str(locationName).capitalize()
+        for i in range(len(df.ID_0)):
+            if(index != df.NAME_1[i]):
+                df = df.drop(i)
+
+        # save the output
+
+        fileName = locationName + ".shp"
+        path = os.path.join(outputFolder,fileName )
+        df.to_file(path, driver='ESRI Shapefile')
+    except:
+        return False
+    return True,path
+
+
+##########################################################
+
+
+# this function will create a shapefile based on image projectopn
+
+def createShapeFileProjection(shapeFilePath,projectShapePath,bandPath):
+
+    try:
+
+    # Read shape file (created by Las Bound) using geopandas
+        shpFile = gpd.read_file(shapeFilePath)
+
+    # Read imagery file downloaded from national map
+        imagery = rasterio.open(bandPath)
+
+    #project shapefile to imagery
+
+        shpFile  = shpFile.to_crs(imagery.crs)
+
+    # save the new shapefile
+
+        shpFile.to_file(projectShapePath, driver='ESRI Shapefile')
+    except:
+        return False
+    
+    return True
+
+# this function will crop raster according to shapefile
+
+def cropRaster(projectShapePath,bandPath,bandOutputBand):
+
+    # crop the band
+    try:
+        with fiona.open(projectShapePath, "r") as shapefile:
+            shapes = [feature["geometry"] for feature in shapefile]
+
+        with rasterio.open(bandPath) as src:
+
+            out_image, out_transform = rasterio.mask.mask(src, shapes, crop=True)
+            out_meta = src.meta
+
+        out_meta.update({"driver": "GTiff",
+                 "height": out_image.shape[1],
+                 "width": out_image.shape[2],
+                 "transform": out_transform})
+
+
+        with rasterio.open(bandOutputBand, "w", **out_meta) as dest:
+            dest.write(out_image)
+
+    except:
+        return False
+    
+    return True
+
+
+    
 
