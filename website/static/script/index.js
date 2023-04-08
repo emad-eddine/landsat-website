@@ -26,18 +26,18 @@ for(let i=0; i<inputFields.length; i++){
 
 
 
-submitBtn.addEventListener('click', (e)=>{
-    e.preventDefault()
-    if(count > 5){
-        cardContainer.style.display = 'none'
-        outroOverlay.classList.remove('disabled')
-    }
-    else{
-        for(let i=0; i<errorDisplayers.length; i++){
-            errorDisplayers[i].textContent = '*This field is Required'
-        }
-    }
-})
+// submitBtn.addEventListener('click', (e)=>{
+//     e.preventDefault()
+//     if(count > 5){
+//         cardContainer.style.display = 'none'
+//         outroOverlay.classList.remove('disabled')
+//     }
+//     else{
+//         for(let i=0; i<errorDisplayers.length; i++){
+//             errorDisplayers[i].textContent = '*This field is Required'
+//         }
+//     }
+// })
 
 
 

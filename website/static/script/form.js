@@ -26,7 +26,7 @@ var userNameError = document.querySelector("#usernameSpan");
 var passwordError = document.querySelector("#passwordSpan");
 var confirmPassworError = document.querySelector("#confirmPasswordSpan");
 
-var form = document.querySelector('#signupForm');
+var form = document.getElementById('signupForm');
 
 
 

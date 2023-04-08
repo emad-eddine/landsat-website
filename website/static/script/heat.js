@@ -1,5 +1,4 @@
 // set max date to choose
-
 var today = new Date();
 var mm = today.getMonth() + 1; //January is 0!
 var yyyy = today.getFullYear();
@@ -233,19 +232,108 @@ Dropzone.options.dropper = {
 
 // btn animation when clicked
 
-simpleBtn = document.getElementById("sbtn")
-smsgSpan = document.getElementById("smsgSpan")
 
-simpleBtn.addEventListener('click', function (e) {
 
-  console.log("simple btn clicked")
-  var target = e.target;
-  setTimeout(function () {
-    target.classList.add('loading');
-    smsgSpan.style.display = "block";
-  }, 125);
 
-}, false);
+
+
+// handling progress bar 
+
+
+var timeout;
+
+async function getStatus() {
+
+  let get;
+  let progressCounter
+
+  try {
+    const res = await fetch("/status");
+    get = await res.json();
+  } catch (e) {
+    console.error("Error: ", e);
+  }
+
+  console.log(get["msg"])
+  console.log(get["error"])
+  console.log(get["pro"])
+  console.log(get["proMsg"])
+
+
+  //prohress bar
+  progressCounter = get["pro"] * 10
+
+
+  document.getElementById("myBar").style.width = progressCounter + '%';
+  // progress msg
+  smsgSpan.innerHTML = get["proMsg"]
+
+  //error msg
+
+  let errorMsg = document.getElementById("errorMsg")
+
+  if (get["error"] == true || get["pro"] == 10) {
+    console.log("done")
+    errorMsg.innerHTML = get["msg"]
+    document.getElementById("myBar").style.width = 0 + '%';
+    smsgSpan.innerHTML = ""
+    clearTimeout(timeout);
+    return false;
+  }
+
+  timeout = setTimeout(getStatus, 1000);
+}
+
+
+///////////////////////////////////////////////////////
+
+
+
+
+async function getStatusAdvanced() {
+
+  let get;
+  let progressCounter
+
+  try {
+    const res = await fetch("/statusAdv");
+    get = await res.json();
+  } catch (e) {
+    console.error("Error: ", e);
+  }
+
+  console.log(get["msg"])
+  console.log(get["error"])
+  console.log(get["pro"])
+  console.log(get["proMsg"])
+
+
+  //prohress bar
+  progressCounter = get["pro"] * 10
+
+
+  document.getElementById("myBar2").style.width = progressCounter + '%';
+  // progress msg
+  msgSpan.innerHTML = get["proMsg"]
+
+  //error msg
+
+  let errorMsg = document.getElementById("errorMsg")
+
+  if (get["error"] == true || get["pro"] == 10) {
+    console.log("done")
+    document.getElementById("advancedFormeErreur").innerHTML = get["error"]
+    document.getElementById("myBar2").style.width = 0 + '%';
+    msgSpan.innerHTML = ""
+    clearTimeout(timeout);
+    return false;
+  }
+
+  timeout = setTimeout(getStatus, 1000);
+}
+
+
+
 
 
 advancedBtn = document.getElementById("abtn")
@@ -262,20 +350,8 @@ advancedBtn.addEventListener('click', function (e) {
     target.classList.add('loading');
     msgSpan.style.display = "block";
     droped.disabled = true;
-    
+
 
   }, 125);
 
 }, false);
-
-// handling progress bar 
-
-var source = new EventSource("/progress");
-	source.onmessage = function(event) {
-		$('.progress-bar').css('width', event.data+'%').attr('aria-valuenow', event.data);
-		$('.progress-bar-label').text(event.data+'%');
-
-		if(event.data == 100){
-			source.close()
-		}
-	}

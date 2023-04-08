@@ -15,7 +15,7 @@ from .apiHandler import *
 import wget
 from pathlib import Path
 import re # regex
-
+from threading import Thread
 ################### configuration
 
 UPLOAD_FOLDER = 'website\\temp\\'
@@ -32,6 +32,13 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+## variable for progressbar
+
+message = None
+progressMsg = None
+progressCounter= None
+isError = None
+
 ################# rendering pages
 @view.route("/")
 def goHome():
@@ -42,49 +49,58 @@ def goHeat():
     return render_template("heat.html",user = current_user)
 
 
-################## handling form sumbition
-@view.route("/simpleForm",methods=['GET','POST'])
-def simpleForme():
-    if request.method == 'POST':
-        # api approche
-        #print("simple approche")
-        # first we need to get the location name,desired date and study profile
-        simpleLocationName = request.form.get("slocation")
-        simpleStudyDate = request.form.get("simpleStudyDate")
-        simpleStudyDateFrom = request.form.get("simpleStudyDateFrom")
-        simpleStudyDateTo = request.form.get("simpleStudyDateTo")
+################ create seprete thread for the process so we can be able to send progres
 
+def simpleFormTask(simpleLocationName,simpleStudyDate,simpleStudyDateFrom,simpleStudyDateTo,TEMP_ID):
+    
+    global message 
+    global progressMsg
+    global progressCounter
+    global isError 
+    
+    # api approche
+    #print("simple approche")
+    # first we need to get the location name,desired date and study profile
+    message = ""
+    progressMsg = "Connecter Au API...."
+    progressCounter = 1
+    isError = False
+    lon = 0
+    lat = 0
 
-        lon = 0
-        lat = 0
+    #check if there is scenes with given infos
+    # first we need to get API key will be valid for 1 hours and store it
 
-        #check if there is scenes with given infos
-        # first we need to get API key will be valid for 1 hours and store it
-
-        try:
+    apiLogin = None
+    API_KEY = None
+    try:
+        logoutFromApi()
+        apiLogin,API_KEY = createSeason()
+        print(API_KEY)
+    except:
+        isError = True
+        message = "Erreur Clé API,essayer plus tard!"
+    if API_KEY is not None:
+        # proceded with finding the desired location
+        # first we need to get the long and lat of the location
+        if str(simpleLocationName) =="" or str(simpleLocationName) is None :
             logoutFromApi()
-            apiLogin,API_KEY = createSeason()
-            print(API_KEY)
-        except:
-            return render_template("heat.html",user = current_user,ErrorMsg = "Erreur Clé API,essayer plus tard!")
-        if API_KEY is not None:
-                # proceded with finding the desired location
-                # first we need to get the long and lat of the location
-            if str(simpleLocationName) =="" or str(simpleLocationName) is None :
-                 logoutFromApi()
-                 return render_template("heat.html",user = current_user,ErrorMsg = "Aucune région été choisi!")
-            else:    
-                address = simpleLocationName
-                url = 'https://nominatim.openstreetmap.org/search/' + urllib.parse.quote(address) +'?format=json'
-                try :
-                    response = requests.get(url).json()
-                    lat = float(response[0]["lat"])
-                    lon = float(response[0]["lon"])
-                    print(lat)
-                    print(lon)
-                except:
-                    logoutFromApi()
-                    return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors la récuperation du position géographique!")
+            isError = True
+            message = "Aucune région été choisi!"
+        else: 
+            progressMsg = "Chercher la position geographique...."   
+            address = simpleLocationName
+            url = 'https://nominatim.openstreetmap.org/search/' + urllib.parse.quote(address) +'?format=json'
+            try :
+                response = requests.get(url).json()
+                lat = float(response[0]["lat"])
+                lon = float(response[0]["lon"])
+                print(lat)
+                print(lon)
+            except:
+                logoutFromApi()
+                isError = True
+                message = "Erreur lors la récuperation du position géographique!"
 
             # after we get location lets create time stamp    
             # ie 2023-03 => 2023-03-01 -> 2023-03-30
@@ -93,10 +109,12 @@ def simpleForme():
                 endDate = simpleStudyDate + "-30"
             except:
                 logoutFromApi()
-                return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors la récuperation du date d'étude!")
-            
-            
+                isError = True
+                message = "Erreur lors la récuperation du date d'étude!"
+       
             # now lets search for the scene with LC08_L1 from 'display_id': 'LC09_L1TP_198035_20230326_20230326_02_T1'
+            progressMsg = "Chercher les Scenes...." 
+            progressCounter = 3
             scenes = searchForScene(apiLogin=apiLogin,
                                         lat=lat,
                                         long=lon,
@@ -111,26 +129,31 @@ def simpleForme():
                     if levelOneSceneId != "" or levelOneSceneId is not None:
                         break
                 if levelOneSceneId == "" or levelOneSceneId is None:
-                    return render_template("heat.html",user = current_user,ErrorMsg = "Aucune scene a été trouvé avec niveau 1!")
+                    logoutFromApi()
+                    isError = True
+                    message = "Aucune scene a été trouvé avec niveau 1!"
             except:
-                return render_template("heat.html",user = current_user,ErrorMsg = "Aucune scene a été trouvé!")
+                logoutFromApi()
+                isError = True
+                message = "Aucune scene a été trouvé!"
             #print("simple scenes id ")
             #print(levelOneSceneId)
             # get download option for this scenes
             try :
+                progressMsg = "Télécharger les bands du Scene...." 
+                progressCounter = 4
                 downloadOption = getDownloadOption(levelOneSceneId,API_KEY)
 
-            # get the ids of bands so we can get the download link
+                # get the ids of bands so we can get the download link
 
                 bandsIds = getIDsForDownloadUrlForBand(bandsList=BANDS_LIST,downloadOptions=downloadOption)
                 #print(bandsIds)
-            # get download urls for each band
+                # get download urls for each band
 
                 urls = getDownloadUrl(bandsIds=bandsIds,BAND_LIST=BANDS_LIST,API_KEY=API_KEY)
 
                 #check if there is dir with user id if not lets  create one
-                userUsed = current_user
-                TEMP_ID = str(userUsed.get_id())
+
                 SAVE_FOLDER_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
                 
                 try:
@@ -138,7 +161,8 @@ def simpleForme():
                         os.mkdir(SAVE_FOLDER_PATH)
                 except:
                     logoutFromApi()
-                    return render_template("heat.html",user = current_user,ErrorMsg = "Erreu lors creation votre reportoire,essayer plus tards!")
+                    isError = True
+                    message = "Erreu lors creation votre reportoire,essayer plus tards!"
 
                 # lets start the download and saving the .tif(s)
                 try:
@@ -148,22 +172,27 @@ def simpleForme():
                         #print(urls[b])
                 except:
                     logoutFromApi()
-                    return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors le téléchargement des Scenes!essayer plus tard!")
+                    isError = True
+                    message = "Erreur lors le téléchargement des Scenes!essayer plus tard!"
+
             except:
                 logoutFromApi()
-                return render_template("heat.html",user = current_user,ErrorMsg = "Aucune Lien de téléchargement a été trouvé!")
+                isError = True
+                message = "Aucune Lien de téléchargement a été trouvé!"
 
             # so far we should have all the bands we need to calculate LST
             # lets check if we got all the required bands
             # calculate LST
-            user = current_user
-            TEMP_ID = str(user.get_id())
+            progressMsg = "Calculer la temperature du surface du scene...." 
+            progressCounter = 5
+
             BANDS_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
             isCalculated = __applyLST__(BANDS_PATH,TEMP_ID,"")
 
             if isCalculated == False:
                 logoutFromApi()
-                return render_template("heat.html",user = current_user,ErrorMsg = "Erreur il manque des fichier.tif!")
+                isError = True
+                message = "Erreur il manque des fichier.tif!"
             #__applyLST__(BANDS_PATH,TEMP_ID)
 
             ##################### end of lst calculation ###################
@@ -176,6 +205,8 @@ def simpleForme():
             # ie 2023-03 => 2023-03-01 -> 2023-03-30
 
             print("profile start handeling")
+            progressMsg = "Générer les profiles...." 
+            progressCounter = 6
             try:
                 profileStartDate = simpleStudyDateFrom + "-01"
                 profileEndDate = simpleStudyDateTo+ "-30"
@@ -183,11 +214,13 @@ def simpleForme():
                 print(profileEndDate)
             except:
                 logoutFromApi()
-                return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors la récuperation la date du profile d'étude!")
+                isError = True
+                message = "Erreur lors la récuperation la date du profile d'étude!"
 
 
  
             # lets start serching for the scenes
+            progressMsg = "Chercher les scenes du profile...." 
             scenes = searchForScene(apiLogin=apiLogin,
                                         lat=lat,
                                         long=lon,
@@ -207,16 +240,20 @@ def simpleForme():
                 
                 if levelOneSceneIdList == False or levelOneSceneIdList is None:
                     logoutFromApi()
-                    return render_template("heat.html",user = current_user,ErrorMsg = "Aucune scenes a été trouve pour le profile et avec niveau 1!")
+                    isError = True
+                    message = "Aucune scenes a été trouve pour le profile et avec niveau 1!"
                                     
                 #print(levelOneSceneIdList)
                     
             except:
                 logoutFromApi()
-                return render_template("heat.html",user = current_user,ErrorMsg = "Aucune scenes a éte trouvé pour le profle d'étude!")
-           
+                isError = True
+                message = "Aucune scenes a éte trouvé pour le profle d'étude!"
+            
+            progressCounter = 8
             try :
                 for sId in levelOneSceneIdList:
+                    progressMsg = "Télécharger les images (peu prend du temps)...." 
                     # get download option for this scenes
                     downloadOption = getDownloadOption(sId["sceneId"],API_KEY)
                     #print("download options")
@@ -231,8 +268,7 @@ def simpleForme():
                     #print(urls)
            
                     #check if there is dir with user id if not lets  create one
-                    userUsed = current_user
-                    TEMP_ID = str(userUsed.get_id())
+
                     PARENT_SAVE_FOLDER_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
                     SAVE_FOLDER_PATH = os.path.join(PARENT_SAVE_FOLDER_PATH,sId["date"])
                     try:
@@ -241,7 +277,8 @@ def simpleForme():
                             os.mkdir(SAVE_FOLDER_PATH)
                     except:
                         logoutFromApi()
-                        return render_template("heat.html",user = current_user,ErrorMsg = "Erreu lors creation votre reportoire,essayer plus tards!")
+                        isError = True
+                        message = "Erreu lors creation votre reportoire,essayer plus tards!"
 
                     # lets start the download and saving the .tif(s)
                     try:
@@ -253,9 +290,8 @@ def simpleForme():
 
                         # let calculate the land surface temperature
                         try:
-                            userUsed = current_user
-                            TEMP_ID = str(userUsed.get_id())
-
+                            
+                            progressMsg = "Calculer la temperature du surface...." 
                             folderName = sId["date"]
                             isCalculated = True
 
@@ -263,42 +299,261 @@ def simpleForme():
 
                             if isCalculated == False:
                                 logoutFromApi()
-                                return render_template("heat.html",user = current_user,ErrorMsg = "Erreur il manque des fichier.tif!")
+                                isError = True
+                                message = "Erreur il manque des fichier.tif!"
 
                         except:
                             logoutFromApi()
-                            return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors calculer LST !essayer plus tard!")
-
-                        
+                            isError = True
+                            message = "Erreur lors calculer LST !essayer plus tard!"
                     except:
                         logoutFromApi()
-                        return render_template("heat.html",user = current_user,ErrorMsg = "Erreur lors le téléchargement les Scenes du profile!essayer plus tard!")
-                    
-                    
-        
-                    
-            
-            
-            
-            
-            
-            
-            
+                        isError = True
+                        message = "Erreur lors le téléchargement les Scenes du profile!essayer plus tard!"
+
+                progressMsg = "Terminer....."
+                progressCounter = 10        
             except:
                 logoutFromApi()
-                return render_template("heat.html",user = current_user,ErrorMsg = "Aucune Lien de téléchargement a été trouvé!")  
-        
+                isError = True
+                message = "Aucune Lien de téléchargement a été trouvé!"
+               
         ############# end of simple form #####################
         # 
-        # 
-        # #####################################################                  
-        else :
-            logoutFromApi()
-            return render_template("heat.html",user = current_user,ErrorMsg = "Erreur Clé API,essayer plus tard!")                
-    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="")
+        #  
+        # #####################################################                 
+    else :
+        logoutFromApi()
+        isError = True
+        message = "Erreur Clé API,essayer plus tard!"
+  
 
+@view.route('/status', methods=['GET'])
+def getStatus():
+  statusList = {'msg':message,"error":isError,"pro":progressCounter,"proMsg":progressMsg}
+  return json.dumps(statusList)
 
+################## handling form sumbition
+@view.route("/simpleForm",methods=['GET','POST'])
+def simpleForme():
+    if request.method == 'POST':
+        TEMP_ID = str(current_user.get_id())
+        simpleLocationName = request.form.get("slocation")
+        simpleStudyDate = request.form.get("simpleStudyDate")
+        simpleStudyDateFrom = request.form.get("simpleStudyDateFrom")
+        simpleStudyDateTo = request.form.get("simpleStudyDateTo")
+        t1 = Thread(target=simpleFormTask,args=(simpleLocationName,
+                                        simpleStudyDate  ,
+                                        simpleStudyDateFrom,
+                                        simpleStudyDateTo,
+                                        TEMP_ID))
+        t1.start()
+
+    return render_template("heat.html",user = current_user,check=True,adv=False)
+
+######################################################################
+#
+#
+#
+#
+#
+#
+#######################################################################
+def advancedFormTask(advancedLocationName,advancedStudyDate,advancedStudyProfileFrom,advancedStudyProfileTo,TEMP_ID):
     
+    global message 
+    global progressMsg
+    global progressCounter
+    global isError
+
+    message = ""
+
+    progressCounter = 1
+    isError = False
+
+    if str(advancedLocationName) != "" and str(advancedStudyDate) != "" and str(advancedStudyProfileFrom) != "" and str(advancedStudyProfileTo) != "":
+            
+        progressMsg = "Vérifier la validité des images...."
+        # check if file names match the patter ie bandNum.tif => 4.tif
+        BANDS_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
+            
+        for file in os.listdir(BANDS_PATH):
+            # check if current path is a file
+            if os.path.isfile(os.path.join(BANDS_PATH, file)):
+                fileNameWitoutExt = str(file)[:-4]
+
+                isNumber = re.findall("[0-1][0-9]", fileNameWitoutExt)
+                    
+                if isNumber == False:
+                    isError = True
+                    message = "Les fichier exporter ont mauvaise notation"
+                    return None
+
+            # at this point we got all required bands let calculate LST
+
+            # #if all required bands are selected 4 5 10 11 continue
+        progressMsg = "Calculer la temperature du surface...."
+        progressCounter = 4
+        __applyLST__(BANDS_PATH,TEMP_ID,"")
+
+            #============end of lst calculation############            
+            ###############################################
+            #=======this section reserved for profile=====#
+            
+        progressMsg = "Génerer le profile...."
+        progressCounter = 6
+        profileStartDate = advancedStudyProfileFrom + "-01"
+        profileEndDate = advancedStudyProfileTo+ "-30"
+        print(profileStartDate)
+        print(profileEndDate)
+        
+        lon = 0
+        lat = 0
+
+        #check if there is scenes with given infos
+        # first we need to get API key will be valid for 1 hours and store it
+
+        try:
+            progressMsg = "Connexion au API...."
+            logoutFromApi()
+            apiLogin,API_KEY = createSeason()
+            print(API_KEY)
+        except:
+            logoutFromApi()
+            isError = True
+            message = "Erreur Clé API,essayer plus tard!"
+        if API_KEY is not None:
+            # proceded with finding the desired location
+            # first we need to get the long and lat of the location
+            #   
+            progressMsg = "Chercher la position geographique...." 
+            address = advancedLocationName
+            url = 'https://nominatim.openstreetmap.org/search/' + urllib.parse.quote(address) +'?format=json'
+            try :
+                response = requests.get(url).json()
+                lat = float(response[0]["lat"])
+                lon = float(response[0]["lon"])
+                print(lat)
+                print(lon)
+            except:
+                logoutFromApi()
+                isError = True
+                message = "Erreur lors la récuperation du position géographique!"
+                
+            progressMsg = "Chercher Les scenes...."
+            # lets start serching for the scenes
+            scenes = searchForScene(apiLogin=apiLogin,
+                                        lat=lat,
+                                        long=lon,
+                                        startData=profileStartDate,
+                                        endDate=profileEndDate)
+            levelOneSceneId =""
+            levelOneSceneIdList = []
+               
+                # in that case we need all the scene L1
+            try:
+                for s in scenes:
+                    levelOneSceneId,aquireDate = checkSceneIdsLevelOneForProfile(s)
+                    if str(levelOneSceneId) !="" and str(aquireDate) !="":
+                        obj = {"sceneId":levelOneSceneId,"date":aquireDate}
+                        levelOneSceneIdList.append(obj)
+                    #print(levelOneSceneId)
+                
+                    if levelOneSceneIdList == False or levelOneSceneIdList is None:
+                        logoutFromApi()
+                        isError = True
+                        message = "Aucune scenes a été trouve pour le profile et avec niveau 1!"
+                        
+                                    
+                    print(levelOneSceneIdList)
+                    
+            except:
+                logoutFromApi()
+                isError = True
+                message = "Aucune scenes a éte trouvé pour le profle d'étude!"
+           
+            try :
+                progressCounter = 7
+                for sId in levelOneSceneIdList:
+                    progressMsg = "Chercher Lien de téléchargement...."
+                    # get download option for this scenes
+                    downloadOption = getDownloadOption(sId["sceneId"],API_KEY)
+                    #print("download options")
+
+                    # get the ids of bands so we can get the download link
+                    bandsIds = getIDsForDownloadUrlForBand(bandsList=BANDS_LIST,downloadOptions=downloadOption)
+                    #print(bandsIds)
+
+
+                    # get download urls for each band
+                    urls = getDownloadUrl(bandsIds=bandsIds,BAND_LIST=BANDS_LIST,API_KEY=API_KEY)
+                    #print(urls)
+           
+                    #check if there is dir with user id if not lets  create one
+
+                    PARENT_SAVE_FOLDER_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
+                    SAVE_FOLDER_PATH = os.path.join(PARENT_SAVE_FOLDER_PATH,sId["date"])
+                    try:
+                        #print("making dir ")
+                        if os.path.isdir(SAVE_FOLDER_PATH) == False:
+                            os.mkdir(SAVE_FOLDER_PATH)
+                    except:
+                        logoutFromApi()
+                        isError = True
+                        message = "Erreu lors creation votre reportoire,essayer plus tards!"
+
+                    # lets start the download and saving the .tif(s)
+                    try:
+                        progressMsg = "Télécherger les scenes...."
+                        for b in BANDS_LIST:
+                            FULL_PATH = str(SAVE_FOLDER_PATH) + "/" + str(b) + ".tif"
+                            print(urls[b])
+                            #wget.download(urls[b], FULL_PATH)                           
+                        
+                            # let calculate the land surface temperature
+                            try:
+
+                                folderName = sId["date"]
+                                isCalculated = True
+                                progressMsg = "Calculer la temperature du surface...."
+                                isCalculated = __applyLST__(SAVE_FOLDER_PATH,TEMP_ID,folderName)
+                                progressCounter = 8
+                                if isCalculated == False:
+                                    logoutFromApi()
+                                    isError = True
+                                    message = "Erreur il manque des fichier.tif!"
+
+                            except:
+                                logoutFromApi()
+                                isError = True
+                                message = "Erreur lors calculer LST !essayer plus tard!"
+
+                    except:
+                        logoutFromApi()
+                        isError = True
+                        message = "Erreur lors le téléchargement les Scenes du profile!essayer plus tard!"
+
+                progressMsg = "Terminer...."
+                progressCounter = 10
+            except:
+                logoutFromApi()
+                isError = True
+                message = "Aucune Lien de téléchargement a été trouvé!"
+        else :
+            isError = True
+            message = "Erreur Clé API,essayer plus tard!"
+
+    else:
+        isError = True
+        message = "Des champs sont vides"
+
+        
+@view.route('/statusAdv', methods=['GET'])
+def getStatusAdv():
+  statusList = {'msg':message,"error":isError,"pro":progressCounter,"proMsg":progressMsg}
+  return json.dumps(statusList)
+
+  
 ################## handling advanced form sumbition
 
 @view.route("/advancedForm",methods=['GET','POST'])
@@ -306,167 +561,22 @@ def advancedForme():
 
     if request.method == 'POST':
         # get user form
+        TEMP_ID = str(current_user.get_id())
         advancedLocationName = request.form.get("Alocation")
         advancedStudyDate = request.form.get("dateFrom")
         advancedStudyProfileFrom = request.form.get("advancedStudyDateFrom")
         advancedStudyProfileTo = request.form.get("advancedStudyDateTo")
 
-        if str(advancedLocationName) != "" and str(advancedStudyDate) != "" and str(advancedStudyProfileFrom) != "" and str(advancedStudyProfileTo) != "":
-            
-            # check if file names match the patter ie bandNum.tif => 4.tif
-            user = current_user
-            TEMP_ID = str(user.get_id())
-            BANDS_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
-            
-            for file in os.listdir(BANDS_PATH):
-                # check if current path is a file
-                if os.path.isfile(os.path.join(BANDS_PATH, file)):
-                    fileNameWitoutExt = str(file)[:-4]
+        t1 = Thread(target=advancedFormTask,args=(advancedLocationName,
+                                        advancedStudyDate  ,
+                                        advancedStudyProfileFrom,
+                                        advancedStudyProfileTo,
+                                        TEMP_ID))
+        t1.start()
 
-                    isNumber = re.findall("[0-1][0-9]", fileNameWitoutExt)
-                    
-                    if isNumber == False:
-                        return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Les fichier exporter ont mauvaise notation")
+    return render_template("heat.html",user = current_user,check=False,adv=True)
 
-            # at this point we got all required bands let calculate LST
-
-            # #if all required bands are selected 4 5 10 11 continue
-
-            __applyLST__(BANDS_PATH,TEMP_ID,"")
-
-            #============end of lst calculation############            
-            ###############################################
-            #=======this section reserved for profile=====#
-            
-            profileStartDate = advancedStudyProfileFrom + "-01"
-            profileEndDate = advancedStudyProfileTo+ "-30"
-            print(profileStartDate)
-            print(profileEndDate)
         
-            lon = 0
-            lat = 0
-
-            #check if there is scenes with given infos
-            # first we need to get API key will be valid for 1 hours and store it
-
-            try:
-                logoutFromApi()
-                apiLogin,API_KEY = createSeason()
-                print(API_KEY)
-            except:
-                return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Erreur Clé API,essayer plus tard!")
-            if API_KEY is not None:
-                # proceded with finding the desired location
-                # first we need to get the long and lat of the location
-                #    
-                address = advancedLocationName
-                url = 'https://nominatim.openstreetmap.org/search/' + urllib.parse.quote(address) +'?format=json'
-                try :
-                    response = requests.get(url).json()
-                    lat = float(response[0]["lat"])
-                    lon = float(response[0]["lon"])
-                    print(lat)
-                    print(lon)
-                except:
-                    logoutFromApi()
-                    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Erreur lors la récuperation du position géographique!")
-                
-
-                # lets start serching for the scenes
-                scenes = searchForScene(apiLogin=apiLogin,
-                                        lat=lat,
-                                        long=lon,
-                                        startData=profileStartDate,
-                                        endDate=profileEndDate)
-                levelOneSceneId =""
-                levelOneSceneIdList = []
-               
-                # in that case we need all the scene L1
-                try:
-                    for s in scenes:
-                        levelOneSceneId,aquireDate = checkSceneIdsLevelOneForProfile(s)
-                        if str(levelOneSceneId) !="" and str(aquireDate) !="":
-                            obj = {"sceneId":levelOneSceneId,"date":aquireDate}
-                            levelOneSceneIdList.append(obj)
-                        #print(levelOneSceneId)
-                
-                    if levelOneSceneIdList == False or levelOneSceneIdList is None:
-                        logoutFromApi()
-                        return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Aucune scenes a été trouve pour le profile et avec niveau 1!")
-                                    
-                    print(levelOneSceneIdList)
-                    
-                except:
-                    logoutFromApi()
-                    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Aucune scenes a éte trouvé pour le profle d'étude!")
-           
-                try :
-                    for sId in levelOneSceneIdList:
-                    # get download option for this scenes
-                        downloadOption = getDownloadOption(sId["sceneId"],API_KEY)
-                    #print("download options")
-
-                    # get the ids of bands so we can get the download link
-                        bandsIds = getIDsForDownloadUrlForBand(bandsList=BANDS_LIST,downloadOptions=downloadOption)
-                    #print(bandsIds)
-
-
-                    # get download urls for each band
-                        urls = getDownloadUrl(bandsIds=bandsIds,BAND_LIST=BANDS_LIST,API_KEY=API_KEY)
-                    #print(urls)
-           
-                    #check if there is dir with user id if not lets  create one
-                        userUsed = current_user
-                        TEMP_ID = str(userUsed.get_id())
-                        PARENT_SAVE_FOLDER_PATH = os.path.join(UPLOAD_FOLDER, TEMP_ID)
-                        SAVE_FOLDER_PATH = os.path.join(PARENT_SAVE_FOLDER_PATH,sId["date"])
-                        try:
-                            #print("making dir ")
-                            if os.path.isdir(SAVE_FOLDER_PATH) == False:
-                                os.mkdir(SAVE_FOLDER_PATH)
-                        except:
-                            logoutFromApi()
-                            return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Erreu lors creation votre reportoire,essayer plus tards!")
-
-                    # lets start the download and saving the .tif(s)
-                        try:
-                            for b in BANDS_LIST:
-                                FULL_PATH = str(SAVE_FOLDER_PATH) + "/" + str(b) + ".tif"
-                                print(urls[b])
-                                #wget.download(urls[b], FULL_PATH)  
-                            print("================end=================")                          
-                        
-                            # let calculate the land surface temperature
-                            try:
-                                userUsed = current_user
-                                TEMP_ID = str(userUsed.get_id())
-
-                                folderName = sId["date"]
-                                isCalculated = True
-
-                                isCalculated = __applyLST__(SAVE_FOLDER_PATH,TEMP_ID,folderName)
-
-                                if isCalculated == False:
-                                    logoutFromApi()
-                                    return render_template("heat.html",user = current_user,aErrorMsg = "Erreur il manque des fichier.tif!")
-
-                            except:
-                                logoutFromApi()
-                                return render_template("heat.html",user = current_user,aErrorMsg = "Erreur lors calculer LST !essayer plus tard!")               
-                        except:
-                            logoutFromApi()
-                            return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Erreur lors le téléchargement les Scenes du profile!essayer plus tard!")
-                except:
-                    logoutFromApi()
-                    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg= "Aucune Lien de téléchargement a été trouvé!")  
-        
-        
-
-        else :
-            return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="Des champs sont vides")
-        
-    return render_template("heat.html",user = current_user,ErrorMsg="",aErrorMsg="")
-
 
 
 ############# end form handling functions ####################

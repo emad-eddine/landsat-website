@@ -785,9 +785,21 @@ transform: scaleX(1);
   padding: 10px 10px 10px 15px;
 }
 
-.simpleForm,.advancedForm,.progress{
+.simpleForm,.advancedForm,#myProgress,#myProgress2{
   margin: 10px;
 }
+#myProgress,#myProgress2 {
+  width: 100%;
+  display: none;
+  background-color: #ddd;
+}
+
+#myBar,#myBar2 {
+  width: 1%;
+  height: 30px;
+  background-color: #04AA6D;
+} 
+
 .simpleForm input,.advancedForm input{
   border-color: #00021E;
 }
@@ -1127,9 +1139,9 @@ button.ready:after {
 }
 
 #msgSpan,#smsgSpan
-{  color: #a80000;
+{ color: #a80000;
   font-weight: bold;
-    display: none;
+  display: none;
  
 }
 
@@ -1193,11 +1205,6 @@ button.ready:after {
 #newProfileBtn
 {
   border-radius: 20px;
-}
-
-#newProfileMsg,.progress
-{
-  display: none;
 }
 
 .row

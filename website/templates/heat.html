@@ -6,7 +6,6 @@
 <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
 <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.5.0/dist/svg-pan-zoom.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
-
 <section class="heat-section">
     <div class="info-container">
 
@@ -25,7 +24,7 @@
                 <form action="simpleForm" method="post" class="simpleForm" id="Hform" name="heat-form"
                     enctype="multipart/form-data">
 
-                    <span class="simpleFormeErreur">{{ErrorMsg}}</span>
+                    <span id="errorMsg"class="simpleFormeErreur"></span>
                     <fieldset>
                         <legend>Location De La Zone D'étude</legend>
                         <div class="form-group">
@@ -58,17 +57,20 @@
                     </div>
                     </fieldset>
                     <div class="form-group">
-
-                        <button id="sbtn" type="submit">Valider</button>
-                        <div class="progress">
+                        <button id="simpleSubmitBtn" type="submit">Valider</button>
+                        <!-- <div id="progressDiv" class="progress">
                             <div id="simpleFormeProgressBar" class="progress-bar bg-success" role="progressbar"
                                 style="width: 1%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
+                        </div> -->
+                        <div id="myProgress">
+                            <div id="myBar"></div>
+                          </div>
+                          
                         <small id="smsgSpan">Cela peut prendre quelque minutes...</small>
                     </div>
                 </form>
             </div>
-            <span class="advancedFormeErreur">{{aErrorMsg}}</span>
+            <span class="advancedFormeErreur"></span>
             <div class="tab-pane fade" id="avance" role="tabpanel" aria-labelledby="advaned-tab">
                 <form method="POST" action="upload" class="myForme dropzone dz-clickable" id="dropper"
                     enctype="multipart/form-data">
@@ -130,10 +132,16 @@
                     </fieldset>
                     <div class="form-group">
                         <button id="abtn" type="submit">Valider</button>
-                        <div class="progress">
+                        <!-- <div class="progress">
                             <div id="adcancedFormeProgressBar" class="progress-bar bg-success" role="progressbar"
                                 style="width: 1%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
+                        </div> -->
+                        <div id="myProgress2">
+                            <div id="myBar2"></div>
+                          </div>
+                          
+                    
+                    
                     </div>
                     <small id="msgSpan">Cela peut prendre quelque minutes...</small>
                 </form>
@@ -352,4 +360,37 @@
 <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
 <script src="{{ url_for('static', filename='script/form.js') }}"></script>
 <script src="{{ url_for('static', filename='script/heat.js') }}"></script>
+<script>
+    
+  
+
+    /////////////////////////////////////////////
+    simpleBtn = document.getElementById("simpleSubmitBtn")
+    smsgSpan = document.getElementById("smsgSpan")
+    progressDiv = document.getElementById("myProgress")
+
+    advancedBtn = document.getElementById("abtn")
+
+    msgSpan = document.getElementById("msgSpan")
+    progressDiv2 = document.getElementById("myProgress2")
+
+    
+ 
+        {% if check %}
+        simpleBtn.classList.add('loading');
+        progressDiv.style.display = "block";
+        smsgSpan.style.display = "block";
+        getStatus();
+        {% endif %}
+
+        {% if adv %}
+        advancedBtn.classList.add('loading');
+        progressDiv2.style.display = "block";
+        msgSpan.style.display = "block";
+        getStatusAdvanced();
+        {% endif %}
+      
+    
+    
+</script>
 {% endblock %}
